@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# 수집된 Flow 데이터
+flows_*.json
+dummy_flows_*.json
+*.pcap
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# 환경설정
+.env
+*.env
+config.local.*
+
+# 로그
+*.log
+logs/
+
+# 모델 파일 (용량 큼)
+*.pkl
+*.h5
+*.pt
+*.pth
+models/
