@@ -12,6 +12,7 @@ Thumbs.db
 *.ipr
 *.iws
 out/
+.vscode/
 
 ############################
 # Gradle / Spring Boot
