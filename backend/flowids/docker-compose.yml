@@ -4,7 +4,7 @@ services:
     image: postgres:15-alpine
     container_name: netsentry-postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       POSTGRES_DB: dev_flowids_db
       POSTGRES_USER: myuser      # IntelliJ 환경변수와 일치시킬 것
