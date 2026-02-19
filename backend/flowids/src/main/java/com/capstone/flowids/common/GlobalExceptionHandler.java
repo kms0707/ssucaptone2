@@ -38,4 +38,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleJwtException(JwtException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse<>(401, ex.getMessage(), null));
     }
+
+    @ExceptionHandler(InvalidApiKeyException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidApiKey(InvalidApiKeyException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse<>(401, ex.getMessage(), null));
+    }
 }
