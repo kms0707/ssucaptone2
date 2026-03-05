@@ -1,4 +1,4 @@
-import { Home, FileText, Settings, Shield, LucideIcon, LogOut } from "lucide-react";
+import { Home, Settings, Shield, LucideIcon, LogOut } from "lucide-react";
 import { useLanguage } from "../utils/LanguageContext";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "./ui/button";
@@ -29,7 +29,6 @@ export function Sidebar({ currentPage, onPageChange }: SidebarProps) {
     
     const menuItems: MenuItem[] = [
         { id: "dashboard", label: t("dashboard"), icon: Home },
-        { id: "detection", label: t("detectionDetail"), icon: FileText },
         { id: "settings", label: t("settings"), icon: Settings },
     ];
 

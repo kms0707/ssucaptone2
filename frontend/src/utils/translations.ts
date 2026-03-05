@@ -17,7 +17,7 @@ export const translations: Translations = {
     en: {
         // App Navigation
         dashboard: "Dashboard",
-        detectionDetail: "Detection Detail",
+        detectionDetail: "Flow Log Viewer",
         settings: "Settings",
         networkSecurity: "Network Security",
         selectProject: "Select Project",
@@ -103,9 +103,9 @@ export const translations: Translations = {
         underInvestigation: "Under investigation",
         modelConfidence: "Model confidence",
         trafficDistribution: "Traffic Distribution",
-        realTimeAlerts: "Real-Time Alerts",
+        realTimeAlerts: "Flow Log Viewer",
         live: "Live",
-        searchAlerts: "Search IP, Protocol...",
+        searchAlerts: "Search flow logs by IP or protocol...",
         all: "All",
         
         // Table Headers
@@ -114,6 +114,8 @@ export const translations: Translations = {
         destinationIP: "Destination IP",
         protocolPort: "Protocol/Port",
         bytes: "Bytes",
+        inBytes: "IN_BYTES",
+        outBytes: "OUT_BYTES",
         score: "Score",
         status: "Status",
         
@@ -123,11 +125,11 @@ export const translations: Translations = {
         attack: "Attack",
         
         // Loading and Error States
-        loadingAlerts: "Loading alerts...",
+        loadingAlerts: "Loading flow logs...",
         loadingTrafficData: "Loading traffic data...",
-        errorLoadingAlerts: "Failed to load alerts",
+        errorLoadingAlerts: "Failed to load flow logs",
         errorLoadingTraffic: "Failed to load traffic data",
-        noAlertsFound: "No alerts found",
+        noAlertsFound: "No flow logs found",
         
         // Detection Detail
         detectionDetailTitle: "Detection Detail",
@@ -188,7 +190,7 @@ export const translations: Translations = {
         automationRules: "Automation Rules",
         automationRulesDesc: 
             "Configure automated responses to detected threats",
-        alertTrigger: "Alert Trigger Threshold",
+        alertTrigger: "Detection Trigger Threshold",
         alertTriggerDesc: 
             "Automatically trigger alerts when anomaly score exceeds " +
             "this value",
@@ -237,14 +239,14 @@ export const translations: Translations = {
         sessionImported: "Session imported successfully",
         selectFile: "Select JSON file",
         createdAt: "Created",
-        alertsCount: "Alerts",
+        alertsCount: "Flow Logs",
         attack: "Attack",
         suspicious: "Suspicious",
         normal: "Normal",
         
         // Detection Detail Page
         backToDashboard: "Back to Dashboard",
-        alertDetails: "Alert Details",
+        alertDetails: "Flow Log Viewer",
         networkInformation: "Network Information",
         trafficMetrics: "Traffic Metrics",
         detectionAnalysis: "Detection Analysis",
@@ -257,8 +259,8 @@ export const translations: Translations = {
         suspiciousActivity: "Suspicious Activity",
         attackMessage: "This flow has been classified as malicious. Immediate action recommended.",
         suspiciousMessage: "This flow exhibits unusual patterns. Further investigation required.",
-        loadingAlertDetails: "Loading alert details...",
-        alertNotFound: "Alert not found",
+        loadingAlertDetails: "Loading flow log details...",
+        alertNotFound: "Flow log not found",
         avgPacketSize: "Avg Packet Size",
         duration: "Duration",
         port: "Port",
@@ -276,10 +278,10 @@ export const translations: Translations = {
         interfaceLanguage: "Interface display language",
         autoRefresh: "Auto-refresh",
         dashboardUpdateInterval: "Dashboard update interval",
-        alertThreshold: "Alert Threshold",
-        minimumScoreForAlerts: "Minimum score for alerts",
+        alertThreshold: "Detection Threshold",
+        minimumScoreForAlerts: "Minimum score for flagged flows",
         dataRetention: "Data Retention",
-        alertHistoryDuration: "Alert history duration",
+        alertHistoryDuration: "Flow log history duration",
     },
     ko: {
         // App Navigation
@@ -364,9 +366,9 @@ export const translations: Translations = {
         underInvestigation: "조사 중",
         modelConfidence: "모델 신뢰도",
         trafficDistribution: "트래픽 분포",
-        realTimeAlerts: "실시간 알림",
+        realTimeAlerts: "Flow Log Viewer",
         live: "실시간",
-        searchAlerts: "IP, 프로토콜 검색...",
+        searchAlerts: "Flow Log 검색",
         all: "모두",
         
         // Table Headers
@@ -375,6 +377,8 @@ export const translations: Translations = {
         destinationIP: "목적지 IP",
         protocolPort: "프로토콜/포트",
         bytes: "바이트",
+        inBytes: "IN_BYTES",
+        outBytes: "OUT_BYTES",
         score: "점수",
         status: "상태",
         
@@ -384,11 +388,11 @@ export const translations: Translations = {
         attack: "공격",
         
         // Loading and Error States
-        loadingAlerts: "알림 로딩 중...",
+        loadingAlerts: "Flow Log 로딩 중...",
         loadingTrafficData: "트래픽 데이터 로딩 중...",
-        errorLoadingAlerts: "알림 로딩 실패",
+        errorLoadingAlerts: "Flow Log 로딩 실패",
         errorLoadingTraffic: "트래픽 데이터 로딩 실패",
-        noAlertsFound: "알림이 없습니다",
+        noAlertsFound: "Flow Log가 없습니다",
         
         // Detection Detail
         detectionDetailTitle: "탐지 상세 정보",
@@ -481,14 +485,14 @@ export const translations: Translations = {
         sessionImported: "세션이 성공적으로 가져왔습니다",
         selectFile: "JSON 파일 선택",
         createdAt: "생성됨",
-        alertsCount: "알림 수",
+        alertsCount: "Flow Log 수",
         attack: "공격",
         suspicious: "의심",
         normal: "정상",
         
         // Detection Detail Page
         backToDashboard: "대시보드로 돌아가기",
-        alertDetails: "알림 세부 정보",
+        alertDetails: "Flow Log Viewer",
         networkInformation: "네트워크 정보",
         trafficMetrics: "트래픽 지표",
         detectionAnalysis: "탐지 분석",
@@ -501,8 +505,8 @@ export const translations: Translations = {
         suspiciousActivity: "의심스러운 활동",
         attackMessage: "이 플로우는 악의적인 것으로 분류되었습니다. 즉각적인 조치가 권장됩니다.",
         suspiciousMessage: "이 플로우는 비정상적인 패턴을 보입니다. 추가 조사가 필요합니다.",
-        loadingAlertDetails: "알림 세부 정보 로딩 중...",
-        alertNotFound: "알림을 찾을 수 없습니다",
+        loadingAlertDetails: "Flow Log 상세 정보 로딩 중...",
+        alertNotFound: "Flow Log를 찾을 수 없습니다",
         avgPacketSize: "평균 패킷 크기",
         duration: "지속 시간",
         port: "포트",
@@ -520,10 +524,10 @@ export const translations: Translations = {
         interfaceLanguage: "인터페이스 표시 언어",
         autoRefresh: "자동 새로고침",
         dashboardUpdateInterval: "대시보드 업데이트 간격",
-        alertThreshold: "알림 임계값",
-        minimumScoreForAlerts: "알림을 위한 최소 점수",
+        alertThreshold: "탐지 임계값",
+        minimumScoreForAlerts: "표시할 Flow Log 최소 점수",
         dataRetention: "데이터 보존",
-        alertHistoryDuration: "알림 기록 보존 기간",
+        alertHistoryDuration: "Flow Log 기록 보존 기간",
     },
 };
 

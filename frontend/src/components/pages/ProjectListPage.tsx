@@ -1,12 +1,32 @@
 import { useState, useEffect } from "react";
-import { Folder, Plus, Key, RefreshCw, Loader2 } from "lucide-react";
+import {
+    Folder,
+    Plus,
+    Key,
+    Loader2,
+    User,
+    LogOut,
+    CircleUserRound,
+    Info,
+} from "lucide-react";
 import { fetchProjects, createProject } from "../../utils/apiClient";
 import { Project } from "../../types/api";
 import { useLanguage } from "../../utils/LanguageContext";
 import { info, error as logError } from "../../utils/logger";
+import { useAuth } from "../../contexts/AuthContext";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "../ui/avatar";
 
 interface ProjectListPageProps {
     onProjectSelect: (projectId: number, projectName: string) => void;
+    onNavigateToIntro: () => void;
 }
 
 /**
@@ -17,9 +37,11 @@ interface ProjectListPageProps {
  * @returns {JSX.Element} Project list page
  */
 export function ProjectListPage({ 
-    onProjectSelect 
+    onProjectSelect,
+    onNavigateToIntro,
 }: ProjectListPageProps): JSX.Element {
     const { t } = useLanguage();
+    const { user, logout } = useAuth();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -37,39 +59,10 @@ export function ProjectListPage({
         try {
             setLoading(true);
             setError(null);
-            
-            try {
-                const data = await fetchProjects();
-                setProjects(data);
-                info("Projects loaded successfully from API");
-            } catch (apiError) {
-                info("API not available, using mock projects");
-                
-                const mockProjects: Project[] = [
-                    {
-                        id: 1,
-                        name: "Production Network",
-                        description: "Main production environment monitoring",
-                        apiKey: 
-                            "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6a7b8c9d0e1f2",
-                        apiKeyStatus: "ACTIVE",
-                        apiKeyCreatedAt: new Date().toISOString(),
-                        createdAt: new Date().toISOString(),
-                    },
-                    {
-                        id: 2,
-                        name: "Development Network",
-                        description: "Development and testing environment",
-                        apiKey: 
-                            "f2e1d0c9b8a7z6y5x4w3v2u1t0s9r8q7p6o5n4m3l2k1j0i9h8g7f6e5d4c3b2a1",
-                        apiKeyStatus: "ACTIVE",
-                        apiKeyCreatedAt: new Date().toISOString(),
-                        createdAt: new Date().toISOString(),
-                    },
-                ];
-                
-                setProjects(mockProjects);
-            }
+            const data = await fetchProjects();
+            setProjects(data);
+            localStorage.setItem("projects", JSON.stringify(data));
+            info("Projects loaded successfully from API");
         } catch (err) {
             const message = err instanceof Error 
                 ? err.message 
@@ -99,7 +92,9 @@ export function ProjectListPage({
                 newProjectName,
                 newProjectDesc
             );
-            setProjects([...projects, newProject]);
+            const nextProjects = [...projects, newProject];
+            setProjects(nextProjects);
+            localStorage.setItem("projects", JSON.stringify(nextProjects));
             setShowCreateForm(false);
             setNewProjectName("");
             setNewProjectDesc("");
@@ -174,16 +169,68 @@ export function ProjectListPage({
         return renderError();
     }
 
+    const userDisplayName = user?.username || user?.email || "User";
     return (
         <div className="min-h-screen bg-slate-950 p-6">
             <div className="max-w-6xl mx-auto">
-                <div className="mb-6">
-                    <h1 className="text-lg text-white mb-1">
-                        {t("selectProject")}
-                    </h1>
-                    <p className="text-gray-600 text-[10px]">
-                        Choose a project to monitor
-                    </p>
+                <div className="mb-6 flex items-start justify-between gap-4">
+                    <div>
+                        <h1 className="text-lg text-white mb-1">
+                            {t("selectProject")}
+                        </h1>
+                        <p className="text-gray-600 text-[10px]">
+                            Choose a project to monitor
+                        </p>
+                    </div>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button
+                                className="flex items-center gap-3 border border-gray-800 bg-gray-900 px-3 py-2 text-left hover:bg-gray-800 transition-colors"
+                            >
+                                <Avatar className="size-10 border border-gray-700">
+                                    <AvatarFallback className="bg-gray-800 text-gray-500 flex items-center justify-center">
+                                        <CircleUserRound className="w-7 h-7" strokeWidth={1.75} />
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0">
+                                    <p className="text-xs text-white truncate">
+                                        {userDisplayName}
+                                    </p>
+                                    <p className="text-[10px] text-gray-600 truncate">
+                                        {user?.email || "Signed in"}
+                                    </p>
+                                </div>
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            align="end"
+                            className="w-48 bg-gray-900 border-gray-800 text-gray-300 rounded-none"
+                        >
+                            <DropdownMenuLabel className="text-xs text-gray-500">
+                                Account
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator className="bg-gray-800" />
+                            <DropdownMenuItem
+                                onClick={onNavigateToIntro}
+                                className="text-xs focus:bg-gray-800 focus:text-white rounded-none"
+                            >
+                                <Info className="w-3.5 h-3.5 text-gray-500" />
+                                About
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-xs focus:bg-gray-800 focus:text-white rounded-none">
+                                <User className="w-3.5 h-3.5 text-gray-500" />
+                                Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                                onClick={logout}
+                                className="text-xs focus:bg-red-900/20 focus:text-red-300 rounded-none"
+                            >
+                                <LogOut className="w-3.5 h-3.5 text-red-400" />
+                                Logout
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
 
                 {error && (

@@ -148,6 +148,6 @@ Backend should:
 
 ---
 
-## Mock Fallback
+## Error Handling Behavior
 
-If the backend is unavailable, the frontend automatically falls back to mock data to ensure the UI remains functional during development or outages.
+If the backend is unavailable, the frontend surfaces the API error state and does not fall back to local sample data.

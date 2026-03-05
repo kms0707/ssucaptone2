@@ -1,12 +1,10 @@
 /**
  * API client for communicating with the NIDS backend.
- * Implements fetch logic with automatic mock fallback on failure.
  */
 
 import {
     Alert,
     AlertsResponse,
-    KPIData,
     TrafficDistributionResponse,
     APIError,
     BackendResponse,
@@ -16,10 +14,22 @@ import {
     Member,
     Project,
 } from "../types/api";
-import { info, error as logError, warning } from "./logger";
+import { info, error as logError } from "./logger";
 
 const API_BASE_URL = "http://localhost:8080/api/v1";
 const REQUEST_TIMEOUT = 5000;
+
+const DEV_SAMPLE_ALERT: Alert = {
+    id: "dev-sample-flow-log",
+    sourceIP: "185.143.223.41",
+    destIP: "192.168.0.24",
+    protocol: "TCP/443",
+    inBytes: 18432,
+    outBytes: 927104,
+    status: "Attack",
+    timestamp: "23:59:59",
+    score: 0.9842,
+};
 
 /**
  * Converts backend protocol number to string format.
@@ -42,9 +52,7 @@ const convertProtocol = (protocol: number, port: number): string => {
  * @returns {Alert} Frontend alert object
  */
 const convertLogToAlert = (log: FlowLog): Alert => {
-    const status = log.isAnomaly 
-        ? (log.anomalyScore >= 0.8 ? "Attack" : "Suspicious")
-        : "Normal";
+    const status = log.isAnomaly ? "Attack" : "Normal";
     
     const timestamp = new Date(log.ingestedAt).toLocaleTimeString(
         "en-GB", 
@@ -56,7 +64,8 @@ const convertLogToAlert = (log: FlowLog): Alert => {
         sourceIP: log.srcIp,
         destIP: log.dstIp,
         protocol: convertProtocol(log.protocol, log.dstPort),
-        bytes: log.inBytes,
+        inBytes: log.inBytes,
+        outBytes: log.outBytes,
         status: status,
         timestamp: timestamp,
     };
@@ -134,138 +143,118 @@ const fetchWithTimeout = async (
 };
 
 /**
- * Mock KPI data for fallback when API is unavailable.
+ * Fetches real-time alerts from the backend API.
  * 
- * @returns {KPIData} Mock KPI data structure
+ * @returns {Promise<AlertsResponse>} Alerts response data
  */
-const getMockKPIData = (): KPIData => {
+export const fetchAlerts = async (): Promise<AlertsResponse> => {
+    const projectId = getActiveProjectId();
+    if (!projectId) {
+        throw new Error("No active project selected");
+    }
+
+    const response = await fetchWithTimeout(
+        `${API_BASE_URL}/logs?projectId=${projectId}&page=0&size=100&onlyAnomalies=false`
+    );
+
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+    }
+
+    const backendResponse: BackendResponse<LogsPageResponse> =
+        await response.json();
+
+    const alerts = backendResponse.data.content.map(convertLogToAlert);
+    const alertsWithDevSample = import.meta.env.DEV && alerts.length === 0
+        ? [DEV_SAMPLE_ALERT]
+        : alerts;
+
+    info("Alerts data fetched from API");
     return {
-        totalFlows: 1248,
-        attacksDetected: 2,
-        suspiciousFlows: 1,
-        accuracy: 98.4,
+        alerts: alertsWithDevSample,
+        totalCount: alertsWithDevSample.length,
         lastUpdated: new Date().toISOString(),
     };
 };
 
 /**
- * Mock alerts data for fallback when API is unavailable.
+ * Fetches alert details for a specific alert ID.
  * 
- * @returns {Alert[]} Array of mock alert records
+ * @param {string} alertId - Alert ID
+ * @returns {Promise<Alert>} Alert detail data
  */
-const getMockAlerts = (): Alert[] => {
-    const baseAlerts: Alert[] = [
-        {
-            id: "1",
-            sourceIP: "192.168.1.45",
-            destIP: "10.0.0.12",
-            protocol: "TCP/443",
-            bytes: 2048,
-            status: "Attack",
-            timestamp: "14:23:45",
-        },
-        {
-            id: "5",
-            sourceIP: "192.168.2.34",
-            destIP: "10.0.0.12",
-            protocol: "TCP/3389",
-            bytes: 8192,
-            status: "Attack",
-            timestamp: "14:23:30",
-        },
-        {
-            id: "3",
-            sourceIP: "192.168.1.89",
-            destIP: "10.0.0.25",
-            protocol: "TCP/22",
-            bytes: 1536,
-            status: "Suspicious",
-            timestamp: "14:23:38",
-        },
-        {
-            id: "2",
-            sourceIP: "172.16.0.55",
-            destIP: "10.0.0.18",
-            protocol: "UDP/53",
-            bytes: 512,
-            status: "Normal",
-            timestamp: "14:23:42",
-        },
-    ];
+export const fetchAlertDetail = async (alertId: string): Promise<Alert> => {
+    if (import.meta.env.DEV && alertId === DEV_SAMPLE_ALERT.id) {
+        return DEV_SAMPLE_ALERT;
+    }
 
-    return baseAlerts;
+    const projectId = getActiveProjectId();
+    if (!projectId) {
+        throw new Error("No active project selected");
+    }
+
+    const response = await fetchWithTimeout(
+        `${API_BASE_URL}/logs?projectId=${projectId}&page=0&size=100&onlyAnomalies=false`
+    );
+
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+    }
+
+    const backendResponse: BackendResponse<LogsPageResponse> =
+        await response.json();
+
+    const foundLog = backendResponse.data.content.find(
+        (log) => log.id === alertId
+    );
+
+    if (!foundLog) {
+        throw new Error("Flow log not found");
+    }
+
+    return {
+        ...convertLogToAlert(foundLog),
+        score: foundLog.anomalyScore,
+    };
 };
 
 /**
  * Fetches KPI data from the backend API.
- * Falls back to mock data on error.
  * 
- * @returns {Promise<KPIData>} KPI data structure
+ * @returns {Promise<never>} KPI endpoint is not implemented separately
  */
-export const fetchKPIs = async (): Promise<KPIData> => {
-    return getMockKPIData();
-};
-
-/**
- * Fetches real-time alerts from the backend API.
- * Falls back to mock data on error.
- * 
- * @returns {Promise<AlertsResponse>} Alerts response data
- */
-export const fetchAlerts = async (): Promise<AlertsResponse> => {
-    try {
-        const projectId = getActiveProjectId();
-        if (!projectId) {
-            const mockAlerts = getMockAlerts();
-            return {
-                alerts: mockAlerts,
-                totalCount: mockAlerts.length,
-                lastUpdated: new Date().toISOString(),
-            };
-        }
-
-        const response = await fetchWithTimeout(
-            `${API_BASE_URL}/logs?projectId=${projectId}&page=0&size=100&onlyAnomalies=false`
-        );
-
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-
-        const backendResponse: BackendResponse<LogsPageResponse> = 
-            await response.json();
-        
-        const alerts = backendResponse.data.content.map(
-            convertLogToAlert
-        );
-        
-        info("Alerts data fetched from API");
-        return {
-            alerts: alerts,
-            totalCount: backendResponse.data.totalElements,
-            lastUpdated: new Date().toISOString(),
-        };
-    } catch (err) {
-        const mockAlerts = getMockAlerts();
-        return {
-            alerts: mockAlerts,
-            totalCount: mockAlerts.length,
-            lastUpdated: new Date().toISOString(),
-        };
-    }
+export const fetchKPIs = async (): Promise<never> => {
+    throw new Error("KPI data should be derived from fetched alerts");
 };
 
 /**
  * Fetches traffic distribution from the backend API.
- * Falls back to mock data on error.
  * 
  * @returns {Promise<TrafficDistributionResponse>} Traffic data
  */
-export const fetchTrafficDistribution = async (): 
+export const fetchTrafficDistribution = async ():
     Promise<TrafficDistributionResponse> => {
+    const alertsResponse = await fetchAlerts();
+    const categories = [
+        {
+            name: "Normal",
+            value: alertsResponse.alerts.filter((alert) =>
+                alert.status === "Normal"
+            ).length,
+            color: "#14b8a6",
+        },
+        {
+            name: "Attack",
+            value: alertsResponse.alerts.filter((alert) =>
+                alert.status === "Attack"
+            ).length,
+            color: "#ef4444",
+        },
+    ];
+
     return {
-        categories: [],
-        totalFlows: 0,
+        categories,
+        totalFlows: alertsResponse.totalCount,
         lastUpdated: new Date().toISOString(),
     };
 };
@@ -354,6 +343,36 @@ export const fetchProjects = async (): Promise<Project[]> => {
         await response.json();
     
     info("Projects fetched successfully");
+    return backendResponse.data;
+};
+
+/**
+ * Reissues the API key for a project.
+ * 
+ * @param {number} projectId - Project ID
+ * @param {string} reason - Reissue reason
+ * @returns {Promise<Project>} Updated project data
+ */
+export const reissueProjectApiKey = async (
+    projectId: number,
+    reason: string = "User requested regeneration"
+): Promise<Project> => {
+    const response = await fetchWithTimeout(
+        `${API_BASE_URL}/projects/${projectId}/api-key/reissue?reason=${encodeURIComponent(reason)}`,
+        {
+            method: "POST",
+        }
+    );
+
+    if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "API key regeneration failed");
+    }
+
+    const backendResponse: BackendResponse<Project> =
+        await response.json();
+
+    info("Project API key reissued successfully", { projectId });
     return backendResponse.data;
 };
 

@@ -58,7 +58,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
                 localStorage.removeItem('auth_user');
             }
         }
-        
+
         setIsLoading(false);
     }, []);
 
@@ -73,66 +73,31 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
         try {
             const email = credentials.username;
             const password = credentials.password;
+            const tokens = await loginUser(email, password);
 
-            try {
-                const tokens = await loginUser(email, password);
-                
-                const mockUser: User = {
-                    id: '1',
-                    username: email.split('@')[0],
-                    email: email,
-                };
-                
-                const tokensData = {
-                    accessToken: tokens.accessToken,
-                    refreshToken: tokens.refreshToken,
-                    tokenType: tokens.tokenType,
-                };
-                
-                localStorage.setItem('auth_tokens', 
-                    JSON.stringify(tokensData));
-                localStorage.setItem('auth_user', 
-                    JSON.stringify(mockUser));
-                
-                setToken(tokens.accessToken);
-                setUser(mockUser);
-                setIsAuthenticated(true);
-                
-                logger.info('Login successful (API)', { email });
-                return true;
-            } catch (apiError) {
-                logger.warning('API login failed, using mock login', 
-                    apiError);
-                
-                if (!email || !password) {
-                    logger.error('Login failed: empty credentials');
-                    return false;
-                }
-                
-                const mockUser: User = {
-                    id: '1',
-                    username: email.split('@')[0] || 'user',
-                    email: email,
-                };
-                
-                const mockTokens = {
-                    accessToken: 'mock_access_token_' + Date.now(),
-                    refreshToken: 'mock_refresh_token_' + Date.now(),
-                    tokenType: 'Bearer',
-                };
-                
-                localStorage.setItem('auth_tokens', 
-                    JSON.stringify(mockTokens));
-                localStorage.setItem('auth_user', 
-                    JSON.stringify(mockUser));
-                
-                setToken(mockTokens.accessToken);
-                setUser(mockUser);
-                setIsAuthenticated(true);
-                
-                logger.info('Login successful (Mock)', { email });
-                return true;
-            }
+            const authenticatedUser: User = {
+                id: '1',
+                username: email.split('@')[0] || 'user',
+                email,
+            };
+
+            const tokensData = {
+                accessToken: tokens.accessToken,
+                refreshToken: tokens.refreshToken,
+                tokenType: tokens.tokenType,
+            };
+
+            localStorage.setItem('auth_tokens',
+                JSON.stringify(tokensData));
+            localStorage.setItem('auth_user',
+                JSON.stringify(authenticatedUser));
+
+            setToken(tokens.accessToken);
+            setUser(authenticatedUser);
+            setIsAuthenticated(true);
+
+            logger.info('Login successful', { email });
+            return true;
         } catch (error) {
             logger.error('Login failed', error);
             return false;
@@ -154,24 +119,11 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
         name: string
     ): Promise<boolean> => {
         try {
-            try {
-                const member = await signupUser(email, password, name);
-                logger.info('Signup successful (API)', { 
-                    email: member.email 
-                });
-                return true;
-            } catch (apiError) {
-                logger.warning('API signup failed, using mock signup', 
-                    apiError);
-                
-                if (!email || !password || !name) {
-                    logger.error('Signup failed: missing fields');
-                    return false;
-                }
-                
-                logger.info('Signup successful (Mock)', { email });
-                return true;
-            }
+            const member = await signupUser(email, password, name);
+            logger.info('Signup successful', {
+                email: member.email
+            });
+            return true;
         } catch (error) {
             logger.error('Signup failed', error);
             return false;

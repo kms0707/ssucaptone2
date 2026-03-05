@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 
 interface LoginPageProps {
     onNavigateToSignUp: () => void;
+    onNavigateToIntro: () => void;
 }
 
 /**
@@ -14,7 +15,10 @@ interface LoginPageProps {
  * @param {Function} props.onNavigateToSignUp - Navigate to sign up page
  * @returns {JSX.Element} The login page layout
  */
-export function LoginPage({ onNavigateToSignUp }: LoginPageProps) {
+export function LoginPage({
+    onNavigateToSignUp,
+    onNavigateToIntro,
+}: LoginPageProps) {
     const { login } = useAuth();
     const [userId, setUserId] = useState("");
     const [password, setPassword] = useState("");
@@ -145,6 +149,14 @@ export function LoginPage({ onNavigateToSignUp }: LoginPageProps) {
                                     underline"
                             >
                                 Sign up
+                            </button>
+                        </p>
+                        <p className="text-center mt-2">
+                            <button
+                                onClick={onNavigateToIntro}
+                                className="text-[10px] text-gray-500 hover:text-gray-300 underline"
+                            >
+                                About this app
                             </button>
                         </p>
                     </div>

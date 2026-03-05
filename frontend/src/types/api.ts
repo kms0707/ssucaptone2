@@ -6,7 +6,7 @@
 /**
  * Alert status type representing traffic classification.
  */
-export type AlertStatus = "Normal" | "Suspicious" | "Attack";
+export type AlertStatus = "Normal" | "Attack";
 
 /**
  * Individual alert record from the real-time monitoring system.
@@ -16,9 +16,11 @@ export interface Alert {
     sourceIP: string;
     destIP: string;
     protocol: string;
-    bytes: number;
+    inBytes: number;
+    outBytes: number;
     status: AlertStatus;
     timestamp: string;
+    score?: number;
 }
 
 /**
@@ -79,7 +81,8 @@ export interface DetectionDetail {
     riskLevel: string;
     anomalyScore: number;
     protocol: string;
-    bytes: number;
+    inBytes: number;
+    outBytes: number;
 }
 
 /**

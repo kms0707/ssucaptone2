@@ -5,9 +5,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { 
-    fetchKPIs, 
     fetchAlerts, 
-    fetchTrafficDistribution 
 } from "../utils/apiClient";
 import { KPIData, Alert, TrafficCategory } from "../types/api";
 import { info } from "../utils/logger";
@@ -41,7 +39,6 @@ const calculateTrafficDistribution = (
 ): TrafficCategory[] => {
     const counts = {
         Normal: 0,
-        Suspicious: 0,
         Attack: 0,
     };
 
@@ -51,7 +48,6 @@ const calculateTrafficDistribution = (
 
     return [
         { name: "Normal", value: counts.Normal, color: "#14b8a6" },
-        { name: "Suspicious", value: counts.Suspicious, color: "#fb923c" },
         { name: "Attack", value: counts.Attack, color: "#ef4444" },
     ];
 };
@@ -66,9 +62,6 @@ const calculateKPIData = (alerts: Alert[]): KPIData => {
     const attackCount = alerts.filter(
         (a) => a.status === "Attack"
     ).length;
-    const suspiciousCount = alerts.filter(
-        (a) => a.status === "Suspicious"
-    ).length;
     const normalCount = alerts.filter(
         (a) => a.status === "Normal"
     ).length;
@@ -81,7 +74,7 @@ const calculateKPIData = (alerts: Alert[]): KPIData => {
     return {
         totalFlows: totalFlows,
         attacksDetected: attackCount,
-        suspiciousFlows: suspiciousCount,
+        suspiciousFlows: 0,
         accuracy: parseFloat(accuracy),
         lastUpdated: new Date().toISOString(),
     };
@@ -93,41 +86,14 @@ const calculateKPIData = (alerts: Alert[]): KPIData => {
  * @returns {DashboardData} Dashboard data and loading states
  */
 export const useDashboardData = (): DashboardData => {
-    const [kpiData, setKpiData] = useState<KPIData | null>(null);
     const [alerts, setAlerts] = useState<Alert[]>([]);
-    const [trafficData, setTrafficData] = useState<TrafficCategory[]>([]);
     
-    const [kpiLoading, setKpiLoading] = useState(true);
     const [alertsLoading, setAlertsLoading] = useState(true);
-    const [trafficLoading, setTrafficLoading] = useState(true);
     
-    const [kpiError, setKpiError] = useState<string | null>(null);
     const [alertsError, setAlertsError] = useState<string | null>(null);
-    const [trafficError, setTrafficError] = useState<string | null>(null);
 
     const [isMonitoring, setIsMonitoring] = useState(false);
     const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
-
-    /**
-     * Loads KPI data from the API.
-     * 
-     * @returns {Promise<void>}
-     */
-    const loadKPIData = async (): Promise<void> => {
-        try {
-            setKpiError(null);
-            const data = await fetchKPIs();
-            setKpiData(data);
-            info("KPI data updated successfully");
-        } catch (err) {
-            const message = err instanceof Error 
-                ? err.message 
-                : "Unknown error";
-            setKpiError(message);
-        } finally {
-            setKpiLoading(false);
-        }
-    };
 
     /**
      * Loads alerts data from the API.
@@ -172,36 +138,12 @@ export const useDashboardData = (): DashboardData => {
     };
 
     /**
-     * Loads traffic distribution data from the API.
-     * 
-     * @returns {Promise<void>}
-     */
-    const loadTrafficData = async (): Promise<void> => {
-        try {
-            setTrafficError(null);
-            const response = await fetchTrafficDistribution();
-            setTrafficData(response.categories);
-            info("Traffic data updated successfully");
-        } catch (err) {
-            const message = err instanceof Error 
-                ? err.message 
-                : "Unknown error";
-            setTrafficError(message);
-        } finally {
-            setTrafficLoading(false);
-        }
-    };
-
-    /**
      * Loads all dashboard data.
      * 
      * @returns {Promise<void>}
      */
     const loadAllData = async (): Promise<void> => {
-        await Promise.all([
-            loadKPIData(),
-            loadAlertsData(),
-        ]);
+        await loadAlertsData();
     };
 
     // Calculate traffic distribution from alerts data
@@ -269,11 +211,8 @@ export const useDashboardData = (): DashboardData => {
     const clearData = (): void => {
         info("Clearing all data");
         setAlerts([]);
-        setKpiData(null);
         setAlertsLoading(false);
-        setKpiLoading(false);
         setAlertsError(null);
-        setKpiError(null);
     };
 
     useEffect(() => {
@@ -292,10 +231,10 @@ export const useDashboardData = (): DashboardData => {
         kpiData: calculatedKPIData,
         alerts,
         trafficData: calculatedTrafficData,
-        kpiLoading,
+        kpiLoading: alertsLoading,
         alertsLoading,
         trafficLoading: alertsLoading,
-        kpiError,
+        kpiError: alertsError,
         alertsError,
         trafficError: null,
         isMonitoring,

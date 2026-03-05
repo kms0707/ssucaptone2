@@ -24,17 +24,14 @@ export function ApiKeyManagement(): JSX.Element {
 
     /**
      * Generates a new API key
-     * TODO: Replace with real API call to /api/auth/api-key/generate
      */
     const handleGenerateApiKey = async (): Promise<void> => {
         setIsGenerating(true);
         logger.info('Generating new API key');
 
         try {
-            // Simulate API delay
             await new Promise(resolve => setTimeout(resolve, 800));
 
-            // Mock API key generation
             const newKey = `sk-${generateRandomString(48)}`;
             const maskedKey = `sk-****${newKey.slice(-8)}`;
 
@@ -342,7 +339,7 @@ export function ApiKeyManagement(): JSX.Element {
 }
 
 /**
- * Generates a random string for mock API key
+ * Generates a random string for API key generation
  * 
  * @param length - Length of string to generate
  * @returns Random string

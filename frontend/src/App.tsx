@@ -5,6 +5,7 @@ import { DetectionDetail } from "./components/pages/DetectionDetail";
 import { Settings } from "./components/pages/Settings";
 import { LoginPage } from "./components/pages/LoginPage";
 import { SignUpPage } from "./components/pages/SignUpPage";
+import { IntroPage } from "./components/pages/IntroPage";
 import { ProjectListPage } from "./components/pages/ProjectListPage";
 import { LanguageProvider } from "./utils/LanguageContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
@@ -72,10 +73,20 @@ function AuthenticatedApp(): JSX.Element {
      */
     const renderPage = (): JSX.Element => {
         switch (currentPage) {
+            case "intro":
+                return (
+                    <IntroPage
+                        onGetStarted={() => setCurrentPage("project-list")}
+                        primaryLabel="Open Workspace"
+                        secondaryLabel="Back to Projects"
+                        onSecondaryAction={() => setCurrentPage("project-list")}
+                    />
+                );
             case "project-list":
                 return (
                     <ProjectListPage 
                         onProjectSelect={handleProjectSelect}
+                        onNavigateToIntro={() => setCurrentPage("intro")}
                     />
                 );
             case "dashboard":
@@ -83,6 +94,7 @@ function AuthenticatedApp(): JSX.Element {
                     return (
                         <ProjectListPage 
                             onProjectSelect={handleProjectSelect}
+                            onNavigateToIntro={() => setCurrentPage("intro")}
                         />
                     );
                 }
@@ -107,12 +119,13 @@ function AuthenticatedApp(): JSX.Element {
                 return (
                     <ProjectListPage 
                         onProjectSelect={handleProjectSelect}
+                        onNavigateToIntro={() => setCurrentPage("intro")}
                     />
                 );
         }
     };
 
-    const showSidebar = currentPage !== "project-list";
+    const showSidebar = currentPage !== "project-list" && currentPage !== "intro";
 
     return (
         <div className="min-h-screen bg-slate-950 flex">
@@ -139,7 +152,9 @@ function AuthenticatedApp(): JSX.Element {
  */
 function AppRouter(): JSX.Element {
     const { isAuthenticated, isLoading } = useAuth();
-    const [showSignUp, setShowSignUp] = useState<boolean>(false);
+    const [publicPage, setPublicPage] = useState<
+        "intro" | "login" | "signup"
+    >("intro");
 
     if (isLoading) {
         return (
@@ -151,17 +166,27 @@ function AppRouter(): JSX.Element {
     }
 
     if (!isAuthenticated) {
-        if (showSignUp) {
-            return (
-                <SignUpPage
-                    onSignUp={() => setShowSignUp(false)}
-                    onNavigateToLogin={() => setShowSignUp(false)}
-                />
-            );
+        switch (publicPage) {
+            case "intro":
+                return (
+                    <IntroPage onGetStarted={() => setPublicPage("login")} />
+                );
+            case "signup":
+                return (
+                    <SignUpPage
+                        onSignUp={() => setPublicPage("login")}
+                        onNavigateToLogin={() => setPublicPage("login")}
+                    />
+                );
+            case "login":
+            default:
+                return (
+                    <LoginPage
+                        onNavigateToSignUp={() => setPublicPage("signup")}
+                        onNavigateToIntro={() => setPublicPage("intro")}
+                    />
+                );
         }
-        return (
-            <LoginPage onNavigateToSignUp={() => setShowSignUp(true)} />
-        );
     }
 
     return <AuthenticatedApp />;

@@ -36,18 +36,12 @@ const getStatusBadge = (
 ): JSX.Element => {
     const badgeClass = 
         "bg-red-900/60 text-red-200 border-red-800 rounded-none text-[9px] px-1.5 py-0";
-    const suspiciousClass = 
-        "bg-orange-900/60 text-orange-200 border-orange-800 rounded-none text-[9px] px-1.5 py-0";
     const normalClass = 
         "bg-transparent text-gray-500 border-gray-700 rounded-none text-[9px] px-1.5 py-0";
 
     switch (status) {
         case "Attack":
             return <Badge className={badgeClass}>{t("attack")}</Badge>;
-        case "Suspicious":
-            return <Badge className={suspiciousClass}>
-                {t("suspicious")}
-            </Badge>;
         case "Normal":
             return <Badge className={normalClass}>{t("normal")}</Badge>;
     }
@@ -74,7 +68,7 @@ export function AlertsTable({
     const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<
-        "all" | "Attack" | "Suspicious" | "Normal"
+        "all" | "Attack" | "Normal"
     >("all");
 
     const filteredAlerts = useMemo(() => {
@@ -230,7 +224,11 @@ export function AlertsTable({
                 </TableCell>
                 <TableCell className="text-gray-500 text-[10px] py-0.5 
                     px-2">
-                    {alert.bytes.toLocaleString()}
+                    {alert.inBytes.toLocaleString()}
+                </TableCell>
+                <TableCell className="text-gray-500 text-[10px] py-0.5 
+                    px-2">
+                    {alert.outBytes.toLocaleString()}
                 </TableCell>
                 <TableCell className="py-0.5 px-2">
                     {getStatusBadge(alert.status, t)}
@@ -272,7 +270,11 @@ export function AlertsTable({
                                 </TableHead>
                                 <TableHead className="text-gray-600 
                                     text-[10px] font-normal py-2 px-3">
-                                    {t("bytes")}
+                                    {t("inBytes")}
+                                </TableHead>
+                                <TableHead className="text-gray-600 
+                                    text-[10px] font-normal py-2 px-3">
+                                    {t("outBytes")}
                                 </TableHead>
                                 <TableHead className="text-gray-600 
                                     text-[10px] font-normal py-2 px-3">
@@ -354,18 +356,6 @@ export function AlertsTable({
                         } border`}
                     >
                         {t("attack")}
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setStatusFilter("Suspicious")}
-                        className={`h-6 px-2.5 text-[9px] rounded-none ${
-                            statusFilter === "Suspicious"
-                                ? "bg-orange-900/50 text-orange-300 border-orange-800"
-                                : "bg-transparent text-gray-500 border-gray-700 hover:bg-gray-800"
-                        } border`}
-                    >
-                        {t("suspicious")}
                     </Button>
                     <Button
                         variant="ghost"
