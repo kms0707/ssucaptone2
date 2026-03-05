@@ -240,9 +240,6 @@ export const translations: Translations = {
         selectFile: "Select JSON file",
         createdAt: "Created",
         alertsCount: "Flow Logs",
-        attack: "Attack",
-        suspicious: "Suspicious",
-        normal: "Normal",
         
         // Detection Detail Page
         backToDashboard: "Back to Dashboard",
@@ -486,9 +483,6 @@ export const translations: Translations = {
         selectFile: "JSON 파일 선택",
         createdAt: "생성됨",
         alertsCount: "Flow Log 수",
-        attack: "공격",
-        suspicious: "의심",
-        normal: "정상",
         
         // Detection Detail Page
         backToDashboard: "대시보드로 돌아가기",

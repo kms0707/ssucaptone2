@@ -10,7 +10,6 @@ import {
     generateSessionId,
     calculateSessionStats,
     SessionData,
-    Alert,
 } from "../../utils/sessionManager";
 
 interface DashboardProps {
@@ -66,15 +65,26 @@ export function Dashboard({ onNavigateToDetection, projectId, projectName, onBac
         description: string,
         tags: string[]
     ): void => {
-        const stats = calculateSessionStats(alerts as Alert[]);
-        
+        const sessionAlerts: SessionData["alerts"] = alerts.map((alert) => ({
+            id: alert.id,
+            timestamp: alert.timestamp,
+            sourceIP: alert.sourceIP,
+            destIP: alert.destIP,
+            protocol: alert.protocol,
+            status: alert.status,
+            score: alert.score ?? 0,
+            bytes: (alert.inBytes ?? 0) + (alert.outBytes ?? 0),
+        }));
+
+        const stats = calculateSessionStats(sessionAlerts);
+
         const session: SessionData = {
             id: generateSessionId(),
             name,
             description,
             tags,
             createdAt: new Date().toISOString(),
-            alerts: alerts as Alert[],
+            alerts: sessionAlerts,
             ...stats,
         };
         
