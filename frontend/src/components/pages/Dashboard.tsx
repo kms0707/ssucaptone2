@@ -104,11 +104,19 @@ export function Dashboard({ onNavigateToDetection, projectId, projectName, onBac
                 <div className="flex items-center gap-3">
                     <button
                         onClick={onBackToProjects}
-                        className="text-gray-600 hover:text-gray-500 
-                            flex items-center gap-1.5 text-xs"
+                        className="inline-flex items-center gap-2 rounded-md 
+                            px-4 py-2.5 text-sm font-semibold transition-all 
+                            hover:-translate-y-[1px]"
+                        style={{
+                            backgroundColor: "#102334",
+                            border: "1px solid #2d4f67",
+                            color: "#dbe7f0",
+                            boxShadow:
+                                "0 6px 14px rgba(2, 8, 23, 0.22)",
+                        }}
                     >
-                        <ArrowLeft className="w-3 h-3" />
-                        Projects
+                        <ArrowLeft className="w-4 h-4" />
+                        Back to Projects
                     </button>
                     <span className="text-gray-700">|</span>
                     <span className="text-gray-500 text-[10px]">

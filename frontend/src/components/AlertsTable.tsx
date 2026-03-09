@@ -63,7 +63,7 @@ export function AlertsTable({
     loading, 
     error, 
     onAlertClick,
-    isMonitoring
+    isMonitoring: _isMonitoring
 }: AlertsTableProps) {
     const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = useState("");
@@ -92,16 +92,11 @@ export function AlertsTable({
     }, [searchTerm, statusFilter, alerts]);
 
     /**
-     * Renders the table header with title and live indicator.
+     * Renders the table header.
      * 
      * @returns {JSX.Element} The table header section
      */
     const renderTableHeader = (): JSX.Element => {
-        const indicatorColor = isMonitoring 
-            ? "bg-green-500" 
-            : "bg-red-500";
-        const statusText = isMonitoring ? t("live") : "STOP";
-        
         return (
             <div className="flex items-center justify-between mb-2 pb-2 
                 border-b border-gray-800">
@@ -109,12 +104,6 @@ export function AlertsTable({
                     tracking-wider">
                     {t("realTimeAlerts")}
                 </h3>
-                <div className="flex items-center gap-1.5">
-                    <div className={`w-1.5 h-1.5 ${indicatorColor}`} />
-                    <span className="text-gray-600 text-[10px]">
-                        {statusText}
-                    </span>
-                </div>
             </div>
         );
     };

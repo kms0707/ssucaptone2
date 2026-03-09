@@ -27,6 +27,7 @@ import { Avatar, AvatarFallback } from "../ui/avatar";
 interface ProjectListPageProps {
     onProjectSelect: (projectId: number, projectName: string) => void;
     onNavigateToIntro: () => void;
+    onNavigateToProfile: () => void;
 }
 
 /**
@@ -39,6 +40,7 @@ interface ProjectListPageProps {
 export function ProjectListPage({ 
     onProjectSelect,
     onNavigateToIntro,
+    onNavigateToProfile,
 }: ProjectListPageProps): JSX.Element {
     const { t } = useLanguage();
     const { user, logout } = useAuth();
@@ -218,7 +220,10 @@ export function ProjectListPage({
                                 <Info className="w-3.5 h-3.5 text-gray-500" />
                                 About
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="text-xs focus:bg-gray-800 focus:text-white rounded-none">
+                            <DropdownMenuItem
+                                onClick={onNavigateToProfile}
+                                className="text-xs focus:bg-gray-800 focus:text-white rounded-none"
+                            >
                                 <User className="w-3.5 h-3.5 text-gray-500" />
                                 Profile
                             </DropdownMenuItem>

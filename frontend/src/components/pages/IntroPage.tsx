@@ -1,7 +1,4 @@
-import {
-    ArrowRight,
-    Globe,
-} from "lucide-react";
+import type { CSSProperties, JSX } from "react";
 import { useLanguage } from "../../utils/LanguageContext";
 
 interface IntroPageProps {
@@ -11,283 +8,404 @@ interface IntroPageProps {
     onSecondaryAction?: () => void;
 }
 
-/**
- * Intro landing page shown before authentication.
- *
- * @param {IntroPageProps} props - Component properties
- * @returns {JSX.Element} Intro page layout
- */
+interface CardCopy {
+    title: string;
+    description: string;
+}
+
+interface IntroCopy {
+    aboutTitle: string;
+    aboutSubtitle: string;
+    heroLabel: string;
+    heroTitle: string;
+    heroDescription: string;
+    monitoringLabel: string;
+    monitoringTitle: string;
+    keyCapabilitiesLabel: string;
+    metricFlowLogs: string;
+    metricAttackRisk: string;
+    metricProjects: string;
+    features: CardCopy[];
+    capabilities: CardCopy[];
+}
+
+const theme = {
+    page: "#020817",
+    panel: "#071224",
+    panelStrong: "#09172b",
+    border: "#18324f",
+    borderSoft: "#112840",
+    text: "#f8fbff",
+    textSoft: "#a9bfd8",
+    textMuted: "#7893b0",
+    accent: "#19d3f3",
+    accentSoft: "#0ea5b7",
+    danger: "#ff6678",
+    divider: "#14263d",
+} as const;
+
+const cardStyle: CSSProperties = {
+    backgroundColor: theme.panel,
+    border: `1px solid ${theme.border}`,
+};
+
+const strongCardStyle: CSSProperties = {
+    backgroundColor: theme.panelStrong,
+    border: `1px solid ${theme.border}`,
+};
+
+const sectionStyle: CSSProperties = {
+    borderTop: `1px solid ${theme.divider}`,
+    paddingTop: "1.5rem",
+};
+
+const controlStyle: CSSProperties = {
+    backgroundColor: theme.panel,
+    border: `1px solid ${theme.borderSoft}`,
+    color: theme.text,
+};
+
+const activeLanguageStyle: CSSProperties = {
+    backgroundColor: theme.text,
+    color: theme.page,
+};
+
+const inactiveLanguageStyle: CSSProperties = {
+    backgroundColor: "transparent",
+    color: theme.textSoft,
+};
+
+const primaryButtonStyle: CSSProperties = {
+    backgroundColor: theme.panelStrong,
+    border: `1px solid ${theme.borderSoft}`,
+    color: theme.textSoft,
+    width: "100px",
+    minHeight: "40px",
+    fontSize: "1.2rem",
+    lineHeight: 1,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+};
+
 export function IntroPage({
     onGetStarted,
     primaryLabel = "Login",
-    secondaryLabel = "Learn more",
+    secondaryLabel,
     onSecondaryAction,
 }: IntroPageProps): JSX.Element {
     const { language, setLanguage } = useLanguage();
 
-    const copy = language === "ko" ? {
-        titleTop: "Flow Log AI",
-        titleBottom: "침입 탐지",
-        subtitle:
-            "네트워크 플로우 로그를 분석하고, AI 모델로 의심 행위를 점수화하며, 프로젝트 단위 보안 워크스페이스에서 공격 흔적을 추적합니다.",
-        features: [
-            {
-                title: "플로우 로그 수집 및 업로드",
-                description:
-                    "프로젝트별 트래픽 데이터를 모으고 모니터링 대상을 한 곳에서 관리합니다.",
-            },
-            {
-                title: "AI 모델 기반 공격 탐지",
-                description:
-                    "이상 점수를 바탕으로 정상 흐름과 공격 가능성이 높은 흐름을 빠르게 구분합니다.",
-            },
-            {
-                title: "Flow Log 이력 및 상세 조회",
-                description:
-                    "타임라인, IP 쌍, 상세 화면을 통해 이벤트를 단계적으로 확인할 수 있습니다.",
-            },
-            {
-                title: "프로젝트별 API Key 관리",
-                description:
-                    "같은 앱 안에서 API 키를 발급, 조회, 복사, 재발급할 수 있습니다.",
-            },
-        ],
-        overviewLabel: "모니터링 개요",
-        overviewTitle: "AI 기반 Flow Log 네트워크 침입 탐지 시스템",
-        active: "활성",
-        statFlowLogs: "플로우 로그",
-        statAttackRisk: "공격 위험도",
-        statProjects: "프로젝트",
-        panelOneTitle: "구조화된 흐름 가시성",
-        panelOneDescription:
-            "출발지와 목적지 IP, 프로토콜 정보, 전송 트래픽 볼륨을 한 화면에서 간결하게 확인할 수 있습니다.",
-        panelTwoTitle: "공격 중심 조사 흐름",
-        panelTwoDescription:
-            "프로젝트 선택부터 상세 조사까지 같은 흐름 안에서 바로 이동할 수 있습니다.",
-        primaryLabel,
-        secondaryLabel,
-    } : {
-        titleTop: "Flow Log AI",
-        titleBottom: "Intrusion Detection",
-        subtitle:
-            "Analyze network flow logs, score suspicious behavior with an AI model, and investigate attack traces from a single project-based security workspace.",
-        features: [
-            {
-                title: "Upload or collect flow logs",
-                description:
-                    "Bring in project traffic data and keep monitoring feeds organized in one place.",
-            },
-            {
-                title: "Detect attacks with AI model",
-                description:
-                    "Use anomaly scores to separate normal flows from likely attack traffic.",
-            },
-            {
-                title: "View history and flow details",
-                description:
-                    "Inspect timeline entries, IP pairs, and detail views for deeper triage.",
-            },
-            {
-                title: "Manage API keys per project",
-                description:
-                    "Issue, reveal, copy, and regenerate project API keys from the same app.",
-            },
-        ],
-        overviewLabel: "Monitoring Overview",
-        overviewTitle: "AI-based Flow Log Network Intrusion Detection System",
-        active: "Active",
-        statFlowLogs: "Flow Logs",
-        statAttackRisk: "Attack Risk",
-        statProjects: "Projects",
-        panelOneTitle: "Structured flow visibility",
-        panelOneDescription:
-            "Review source and destination pairs, protocol information, and transferred traffic volume in a compact viewer.",
-        panelTwoTitle: "Attack-focused triage",
-        panelTwoDescription:
-            "Move from project selection to detail investigation without leaving the same workflow.",
-        primaryLabel,
-        secondaryLabel,
-    };
-
-    const handleLearnMore = (): void => {
-        const featureSection = document.getElementById("intro-features");
-        featureSection?.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-
-    const handleSecondaryAction = (): void => {
-        if (onSecondaryAction) {
-            onSecondaryAction();
-            return;
-        }
-
-        handleLearnMore();
-    };
+    const copy: IntroCopy = language === "ko"
+        ? {
+              aboutTitle: "About NIDS",
+              aboutSubtitle: "AI 기반 Flow Log 네트워크 침입 탐지 시스템",
+              heroLabel: "FLOW LOG",
+              heroTitle: "침입 탐지",
+              heroDescription:
+                  "네트워크 플로우 로그를 분석하고, AI 모델로 의심 행위를 점수화하며, 프로젝트 단위 보안 작업 공간에서 공격 흔적을 조사합니다.",
+              monitoringLabel: "MONITORING OVERVIEW",
+              monitoringTitle: "AI 기반 Flow Log 네트워크 침입 탐지 시스템",
+              keyCapabilitiesLabel: "KEY CAPABILITIES",
+              metricFlowLogs: "Flow Logs",
+              metricAttackRisk: "Attack Risk",
+              metricProjects: "Projects",
+              features: [
+                  {
+                      title: "Flow log 업로드 또는 수집",
+                      description:
+                          "모니터링 도구에서 pcap 및 트래픽 데이터를 가져와 한 곳에 정리합니다.",
+                  },
+                  {
+                      title: "AI 모델로 공격 탐지",
+                      description:
+                          "이상 점수를 이용해 정상 흐름과 공격 가능성이 높은 트래픽을 구분합니다.",
+                  },
+                  {
+                      title: "이력과 상세 흐름 조회",
+                      description:
+                          "타임라인 기록, IP 쌍, 세부 보기로 더 깊은 트리아지를 진행합니다.",
+                  },
+              ],
+              capabilities: [
+                  {
+                      title: "구조화된 흐름 가시성",
+                      description:
+                          "출발지와 목적지 쌍, 프로토콜 정보, 트래픽 볼륨을 간결한 화면에서 검토합니다.",
+                  },
+                  {
+                      title: "공격 중심 트리아지",
+                      description:
+                          "프로젝트 선택부터 상세 조사까지 같은 절차를 반복하지 않고 이어서 진행합니다.",
+                  },
+              ],
+          }
+        : {
+              aboutTitle: "About NIDS",
+              aboutSubtitle:
+                  "AI-based Flow Log Network Intrusion Detection System",
+              heroLabel: "FLOW LOG",
+              heroTitle: "Intrusion Detection",
+              heroDescription:
+                  "Analyze network flow logs, score suspicious behavior with an AI model, and investigate attack traces from a single project-based security workspace.",
+              monitoringLabel: "MONITORING OVERVIEW",
+              monitoringTitle:
+                  "AI-based Flow Log Network Intrusion Detection System",
+              keyCapabilitiesLabel: "KEY CAPABILITIES",
+              metricFlowLogs: "Flow Logs",
+              metricAttackRisk: "Attack Risk",
+              metricProjects: "Projects",
+              features: [
+                  {
+                      title: "Upload or collect flow logs",
+                      description:
+                          "Bring in pcap and traffic data once from monitoring tools organized in one place.",
+                  },
+                  {
+                      title: "Detect attacks with AI model",
+                      description:
+                          "Use anomaly scores to separate normal flows from likely attack traffic.",
+                  },
+                  {
+                      title: "View history and flow details",
+                      description:
+                          "Inspect timeline records, IP pairs, and detail views for deeper triage.",
+                  },
+              ],
+              capabilities: [
+                  {
+                      title: "Structured flow visibility",
+                      description:
+                          "Review source and destination pairs, protocol information, and numbered traffic volume in a compact view.",
+                  },
+                  {
+                      title: "Attack-focused triage",
+                      description:
+                          "Move from project selector to detail investigation without repeating the same workflow.",
+                  },
+              ],
+          };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white overflow-hidden">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(20,184,166,0.16),_transparent_34%),radial-gradient(circle_at_82%_18%,_rgba(239,68,68,0.10),_transparent_22%),linear-gradient(180deg,_rgba(15,23,42,0.96),_rgba(2,6,23,1))]" />
-            <div className="absolute inset-x-0 top-0 h-40 bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.12),transparent)] opacity-30" />
-
-            <div className="relative min-h-screen px-6 py-10">
-                <div className="max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-[1.15fr_0.85fr] gap-10 items-start pt-2">
-                    <div className="space-y-8 -mt-12 md:-mt-16">
-                        <div className="flex items-start justify-end gap-4 flex-wrap">
-                            <div className="flex flex-col items-center gap-3">
-                                <div className="inline-flex w-fit items-center gap-2 border border-gray-800 bg-gray-900/70 px-2 py-[5px]">
-                                    <Globe className="w-4 h-4 text-gray-400" />
-                                    <button
-                                        onClick={() => setLanguage("en")}
-                                        className={`min-w-[54px] px-3 py-2 text-[13px] leading-none tracking-[0.14em] transition-colors ${
-                                            language === "en"
-                                                ? "bg-gray-200 text-slate-950"
-                                                : "text-gray-400 hover:text-white"
-                                        }`}
-                                    >
-                                        EN
-                                    </button>
-                                    <button
-                                        onClick={() => setLanguage("ko")}
-                                        className={`min-w-[54px] px-3 py-2 text-[13px] leading-none tracking-[0.08em] transition-colors ${
-                                            language === "ko"
-                                                ? "bg-gray-200 text-slate-950"
-                                                : "text-gray-400 hover:text-white"
-                                        }`}
-                                    >
-                                        KOR
-                                    </button>
-                                </div>
-                                <div className="flex flex-wrap gap-3 justify-end pt-1">
-                                    <button
-                                        onClick={onGetStarted}
-                                        className="inline-flex items-center gap-2 bg-teal-600 hover:bg-teal-700 border border-teal-500 px-5 py-3 text-sm text-white transition-colors"
-                                    >
-                                        {copy.primaryLabel}
-                                        <ArrowRight className="w-4 h-4" />
-                                    </button>
-                                    <button
-                                        onClick={handleSecondaryAction}
-                                        className="inline-flex items-center gap-2 border border-gray-700 bg-gray-900/60 hover:bg-gray-800 px-5 py-3 text-sm text-gray-300 transition-colors"
-                                    >
-                                        {copy.secondaryLabel}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="-translate-y-8 flex max-w-3xl flex-col gap-8">
-                            <div className="text-4xl md:text-6xl font-semibold tracking-tight leading-none">
-                                {copy.titleTop}
-                            </div>
-                            <div className="text-4xl md:text-6xl font-semibold tracking-tight leading-none">
-                                {copy.titleBottom}
-                            </div>
-                            <div className="max-w-2xl text-sm md:text-base text-slate-300 leading-10">
-                                {copy.subtitle}
-                            </div>
-                        </div>
-
+        <div
+            className="min-h-screen"
+            style={{ backgroundColor: theme.page, color: theme.text }}
+        >
+            <div className="mx-auto w-full max-w-[1180px] px-6 md:px-8 py-8 lg:py-10">
+                <div className="flex w-full justify-end">
+                    <div className="flex flex-col items-center gap-3">
                         <div
-                            id="intro-features"
-                            className="mt-12 grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-2xl"
+                            className="inline-flex items-center rounded-sm p-1"
+                            style={controlStyle}
                         >
-                            <div className="border border-gray-800 bg-gray-900/60 p-4">
-                                <p className="text-sm text-white mb-2">
-                                    {copy.features[0].title}
-                                </p>
-                                <p className="text-xs leading-6 text-gray-400">
-                                    {copy.features[0].description}
-                                </p>
-                            </div>
-                            <div className="border border-gray-800 bg-gray-900/60 p-4">
-                                <p className="text-sm text-white mb-2">
-                                    {copy.features[1].title}
-                                </p>
-                                <p className="text-xs leading-6 text-gray-400">
-                                    {copy.features[1].description}
-                                </p>
-                            </div>
-                            <div className="border border-gray-800 bg-gray-900/60 p-4">
-                                <p className="text-sm text-white mb-2">
-                                    {copy.features[2].title}
-                                </p>
-                                <p className="text-xs leading-6 text-gray-400">
-                                    {copy.features[2].description}
-                                </p>
-                            </div>
-                            <div className="border border-gray-800 bg-gray-900/60 p-4">
-                                <p className="text-sm text-white mb-2">
-                                    {copy.features[3].title}
-                                </p>
-                                <p className="text-xs leading-6 text-gray-400">
-                                    {copy.features[3].description}
-                                </p>
-                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setLanguage("en")}
+                                className="min-w-[56px] px-3 py-1.5 text-[11px] tracking-[0.12em]"
+                                style={
+                                    language === "en"
+                                        ? activeLanguageStyle
+                                        : inactiveLanguageStyle
+                                }
+                            >
+                                EN
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setLanguage("ko")}
+                                className="min-w-[56px] px-3 py-1.5 text-[11px] tracking-[0.1em]"
+                                style={
+                                    language === "ko"
+                                        ? activeLanguageStyle
+                                        : inactiveLanguageStyle
+                                }
+                            >
+                                KOR
+                            </button>
+                        </div>
+
+                        <div className="flex items-center justify-center gap-3">
+                            {secondaryLabel && (
+                                <button
+                                    type="button"
+                                    onClick={onSecondaryAction}
+                                    className="rounded-sm px-5 py-2.5 text-sm"
+                                    style={controlStyle}
+                                >
+                                    {secondaryLabel}
+                                </button>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={onGetStarted}
+                                className="rounded-sm px-8 py-4 font-medium tracking-[0.02em]"
+                                style={primaryButtonStyle}
+                            >
+                                {primaryLabel}
+                            </button>
                         </div>
                     </div>
+                </div>
 
-                    <div className="mt-5 w-full max-w-2xl space-y-4 lg:mt-0 lg:max-w-none">
-                        <div className="w-full border border-gray-800 bg-gray-900/60 p-4">
-                            <p className="text-sm text-white mb-1">
-                                {copy.panelOneTitle}
-                            </p>
-                            <p className="text-xs leading-6 text-gray-400">
-                                {copy.panelOneDescription}
-                            </p>
-                        </div>
-                        <div className="w-full border border-gray-800 bg-gray-900/60 p-4">
-                            <p className="text-sm text-white mb-1">
-                                {copy.panelTwoTitle}
-                            </p>
-                            <p className="text-xs leading-6 text-gray-400">
-                                {copy.panelTwoDescription}
-                            </p>
-                        </div>
+                <div className="mt-8">
+                    <section>
+                        <h1 className="text-[1.85rem] font-medium tracking-tight">
+                            {copy.aboutTitle}
+                        </h1>
+                        <p
+                            className="mt-4 text-sm md:text-[15px]"
+                            style={{ color: theme.textSoft }}
+                        >
+                            {copy.aboutSubtitle}
+                        </p>
+                        <div
+                            className="mt-6 h-px w-full"
+                            style={{ backgroundColor: theme.divider }}
+                        />
+                    </section>
 
-                        <div className="flex w-full flex-col border border-gray-800 bg-gray-900/60 p-4">
-                            <div className="flex items-center justify-between mb-4">
+                    <section className="mt-12" style={sectionStyle}>
+                        <p
+                            className="text-xs tracking-[0.16em]"
+                            style={{ color: theme.accent }}
+                        >
+                            {copy.heroLabel}
+                        </p>
+                        <h2 className="mt-3 text-[1.85rem] md:text-[2rem] font-medium tracking-tight">
+                            {copy.heroTitle}
+                        </h2>
+                        <p
+                            className="mt-4 max-w-[920px] text-sm md:text-[15px] leading-7"
+                            style={{ color: theme.textSoft }}
+                        >
+                            {copy.heroDescription}
+                        </p>
+                    </section>
+
+                    <section
+                        className="grid grid-cols-1 lg:grid-cols-3"
+                        style={{ marginTop: "2rem", gap: "1rem" }}
+                    >
+                        {copy.features.map((feature) => (
+                            <article
+                                key={feature.title}
+                                className="rounded-sm"
+                                style={{ ...cardStyle, padding: "1.5rem" }}
+                            >
+                                <h3 className="text-lg font-medium leading-6">
+                                    {feature.title}
+                                </h3>
+                                <p
+                                    className="mt-3 text-sm leading-7"
+                                    style={{ color: theme.textSoft }}
+                                >
+                                    {feature.description}
+                                </p>
+                            </article>
+                        ))}
+                    </section>
+
+                    <section
+                        style={{ ...sectionStyle, marginTop: "3rem" }}
+                    >
+                        <p
+                            className="text-xs tracking-[0.16em]"
+                            style={{ color: theme.accent }}
+                        >
+                            {copy.monitoringLabel}
+                        </p>
+                        <h2 className="mt-3 text-[1.65rem] font-medium tracking-tight">
+                            {copy.monitoringTitle}
+                        </h2>
+
+                        <div
+                            className="rounded-sm"
+                            style={{
+                                ...strongCardStyle,
+                                marginTop: "1.5rem",
+                                padding: "1.5rem",
+                            }}
+                        >
+                            <div
+                                className="grid grid-cols-1 md:grid-cols-3"
+                                style={{ gap: "1.25rem" }}
+                            >
                                 <div>
-                                    <p className="text-[10px] uppercase tracking-[0.2em] text-gray-500 mb-1">
-                                        {copy.overviewLabel}
+                                    <p
+                                        className="text-sm"
+                                        style={{ color: theme.textMuted }}
+                                    >
+                                        {copy.metricFlowLogs}
                                     </p>
-                                    <p className="text-sm text-white">
-                                        {copy.overviewTitle}
-                                    </p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="w-2 h-2 bg-green-400 rounded-full" />
-                                    <span className="text-[10px] text-green-300">
-                                        {copy.active}
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="border border-gray-800 bg-slate-950/80 p-3">
-                                    <p className="text-[10px] text-gray-500 mb-1">
-                                        {copy.statFlowLogs}
-                                    </p>
-                                    <p className="text-xl text-teal-300 font-mono">
-                                        12.4K
+                                    <p className="mt-3 text-[1.75rem] font-semibold tracking-tight">
+                                        12,486
                                     </p>
                                 </div>
-                                <div className="border border-gray-800 bg-slate-950/80 p-3">
-                                    <p className="text-[10px] text-gray-500 mb-1">
-                                        {copy.statAttackRisk}
+
+                                <div>
+                                    <p
+                                        className="text-sm"
+                                        style={{ color: theme.textMuted }}
+                                    >
+                                        {copy.metricAttackRisk}
                                     </p>
-                                    <p className="text-xl text-red-300 font-mono">
-                                        0.9842
+                                    <p
+                                        className="mt-3 text-[1.75rem] font-semibold tracking-tight"
+                                        style={{ color: theme.danger }}
+                                    >
+                                        0.9862
                                     </p>
                                 </div>
-                                <div className="border border-gray-800 bg-slate-950/80 p-3">
-                                    <p className="text-[10px] text-gray-500 mb-1">
-                                        {copy.statProjects}
+
+                                <div>
+                                    <p
+                                        className="text-sm"
+                                        style={{ color: theme.textMuted }}
+                                    >
+                                        {copy.metricProjects}
                                     </p>
-                                    <p className="text-xl text-amber-300 font-mono">
+                                    <p className="mt-3 text-[1.75rem] font-semibold tracking-tight">
                                         04
                                     </p>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </section>
+
+                    <section
+                        style={{ ...sectionStyle, marginTop: "3rem" }}
+                    >
+                        <p
+                            className="text-xs tracking-[0.16em]"
+                            style={{ color: theme.accent }}
+                        >
+                            {copy.keyCapabilitiesLabel}
+                        </p>
+
+                        <div
+                            className="grid grid-cols-1 md:grid-cols-2"
+                            style={{ marginTop: "2rem", gap: "1rem" }}
+                        >
+                            {copy.capabilities.map((capability) => (
+                                <article
+                                    key={capability.title}
+                                    className="rounded-sm"
+                                    style={{ ...cardStyle, padding: "1.5rem" }}
+                                >
+                                    <h3 className="text-lg font-medium leading-6">
+                                        {capability.title}
+                                    </h3>
+                                    <p
+                                        className="mt-3 text-sm leading-7"
+                                        style={{ color: theme.textSoft }}
+                                    >
+                                        {capability.description}
+                                    </p>
+                                </article>
+                            ))}
+                        </div>
+                    </section>
                 </div>
             </div>
         </div>

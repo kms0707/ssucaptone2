@@ -7,6 +7,7 @@ import { LoginPage } from "./components/pages/LoginPage";
 import { SignUpPage } from "./components/pages/SignUpPage";
 import { IntroPage } from "./components/pages/IntroPage";
 import { ProjectListPage } from "./components/pages/ProjectListPage";
+import { ProfilePage } from "./components/pages/ProfilePage";
 import { LanguageProvider } from "./utils/LanguageContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -87,6 +88,7 @@ function AuthenticatedApp(): JSX.Element {
                     <ProjectListPage 
                         onProjectSelect={handleProjectSelect}
                         onNavigateToIntro={() => setCurrentPage("intro")}
+                        onNavigateToProfile={() => setCurrentPage("profile")}
                     />
                 );
             case "dashboard":
@@ -95,6 +97,7 @@ function AuthenticatedApp(): JSX.Element {
                         <ProjectListPage 
                             onProjectSelect={handleProjectSelect}
                             onNavigateToIntro={() => setCurrentPage("intro")}
+                            onNavigateToProfile={() => setCurrentPage("profile")}
                         />
                     );
                 }
@@ -115,17 +118,27 @@ function AuthenticatedApp(): JSX.Element {
                 );
             case "settings":
                 return <Settings />;
+            case "profile":
+                return (
+                    <ProfilePage
+                        onBackToProjects={() => setCurrentPage("project-list")}
+                    />
+                );
             default:
                 return (
                     <ProjectListPage 
                         onProjectSelect={handleProjectSelect}
                         onNavigateToIntro={() => setCurrentPage("intro")}
+                        onNavigateToProfile={() => setCurrentPage("profile")}
                     />
                 );
         }
     };
 
-    const showSidebar = currentPage !== "project-list" && currentPage !== "intro";
+    const showSidebar =
+        currentPage !== "project-list" &&
+        currentPage !== "intro" &&
+        currentPage !== "profile";
 
     return (
         <div className="min-h-screen bg-slate-950 flex">
