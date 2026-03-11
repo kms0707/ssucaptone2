@@ -23,6 +23,18 @@ interface AlertsTableProps {
     isMonitoring?: boolean;
 }
 
+const formatNumber = (value: number | null | undefined): string => {
+    return typeof value === "number" && Number.isFinite(value)
+        ? value.toLocaleString()
+        : "0";
+};
+
+const safeText = (value: string | null | undefined, fallback = "N/A"): string => {
+    return typeof value === "string" && value.trim().length > 0
+        ? value
+        : fallback;
+};
+
 /**
  * Returns a styled badge component for the given alert status.
  * 
@@ -82,9 +94,9 @@ export function AlertsTable({
         
         if (searchTerm) {
             filtered = filtered.filter((alert) =>
-                alert.sourceIP.includes(searchTerm) ||
-                alert.destIP.includes(searchTerm) ||
-                alert.protocol.includes(searchTerm)
+                safeText(alert.sourceIP, "").includes(searchTerm) ||
+                safeText(alert.destIP, "").includes(searchTerm) ||
+                safeText(alert.protocol, "").includes(searchTerm)
             );
         }
         
@@ -197,27 +209,27 @@ export function AlertsTable({
             >
                 <TableCell className="text-gray-500 font-mono text-[10px] 
                     py-0.5 px-2">
-                    {alert.timestamp || "N/A"}
+                    {safeText(alert.timestamp)}
                 </TableCell>
                 <TableCell className="text-gray-300 font-mono text-[10px] 
                     py-0.5 px-2">
-                    {alert.sourceIP}
+                    {safeText(alert.sourceIP)}
                 </TableCell>
                 <TableCell className="text-gray-300 font-mono text-[10px] 
                     py-0.5 px-2">
-                    {alert.destIP}
+                    {safeText(alert.destIP)}
                 </TableCell>
                 <TableCell className="text-gray-500 text-[10px] py-0.5 
                     px-2">
-                    {alert.protocol}
+                    {safeText(alert.protocol)}
                 </TableCell>
                 <TableCell className="text-gray-500 text-[10px] py-0.5 
                     px-2">
-                    {alert.inBytes.toLocaleString()}
+                    {formatNumber(alert.inBytes)}
                 </TableCell>
                 <TableCell className="text-gray-500 text-[10px] py-0.5 
                     px-2">
-                    {alert.outBytes.toLocaleString()}
+                    {formatNumber(alert.outBytes)}
                 </TableCell>
                 <TableCell className="py-0.5 px-2">
                     {getStatusBadge(alert.status, t)}

@@ -10,6 +10,12 @@ interface DetectionDetailProps {
     onBack: () => void;
 }
 
+const formatNumber = (value: number | null | undefined): string => {
+    return typeof value === "number" && Number.isFinite(value)
+        ? value.toLocaleString()
+        : "0";
+};
+
 /**
  * Displays detailed information about a specific security alert.
  * Shows packet details, flow information, and analysis results.
@@ -187,10 +193,8 @@ export function DetectionDetail({
                 <div className="space-y-0">
                     {renderField(t("classification"), alert.status)}
                     {renderField(t("modelVersion"), "v2.4.1")}
-                    {renderField(t("inBytes"),
-                        alert.inBytes.toLocaleString())}
-                    {renderField(t("outBytes"),
-                        alert.outBytes.toLocaleString())}
+                    {renderField(t("inBytes"), formatNumber(alert.inBytes))}
+                    {renderField(t("outBytes"), formatNumber(alert.outBytes))}
                 </div>
                 
                 {isAttack && (

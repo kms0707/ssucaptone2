@@ -45,6 +45,16 @@ const convertProtocol = (protocol: number, port: number): string => {
     return `${protocolName}/${port}`;
 };
 
+const normalizeNumber = (value: number | null | undefined): number => {
+    return typeof value === "number" && Number.isFinite(value) ? value : 0;
+};
+
+const normalizeText = (value: string | null | undefined, fallback = "N/A"): string => {
+    return typeof value === "string" && value.trim().length > 0
+        ? value
+        : fallback;
+};
+
 /**
  * Converts backend FlowLog to frontend Alert format.
  * 
@@ -54,18 +64,21 @@ const convertProtocol = (protocol: number, port: number): string => {
 const convertLogToAlert = (log: FlowLog): Alert => {
     const status = log.isAnomaly ? "Attack" : "Normal";
     
-    const timestamp = new Date(log.ingestedAt).toLocaleTimeString(
-        "en-GB", 
-        { hour12: false }
-    );
+    const parsedDate = log.ingestedAt ? new Date(log.ingestedAt) : null;
+    const timestamp = parsedDate && !Number.isNaN(parsedDate.getTime())
+        ? parsedDate.toLocaleTimeString("en-GB", { hour12: false })
+        : "N/A";
 
     return {
-        id: log.id,
-        sourceIP: log.srcIp,
-        destIP: log.dstIp,
-        protocol: convertProtocol(log.protocol, log.dstPort),
-        inBytes: log.inBytes,
-        outBytes: log.outBytes,
+        id: normalizeText(log.id, "unknown-flow-log"),
+        sourceIP: normalizeText(log.srcIp),
+        destIP: normalizeText(log.dstIp),
+        protocol: convertProtocol(
+            normalizeNumber(log.protocol),
+            normalizeNumber(log.dstPort)
+        ),
+        inBytes: normalizeNumber(log.inBytes),
+        outBytes: normalizeNumber(log.outBytes),
         status: status,
         timestamp: timestamp,
     };
