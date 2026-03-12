@@ -5,7 +5,6 @@ import { DetectionDetail } from "./components/pages/DetectionDetail";
 import { Settings } from "./components/pages/Settings";
 import { LoginPage } from "./components/pages/LoginPage";
 import { SignUpPage } from "./components/pages/SignUpPage";
-import { IntroPage } from "./components/pages/IntroPage";
 import { ProjectListPage } from "./components/pages/ProjectListPage";
 import { ProfilePage } from "./components/pages/ProfilePage";
 import { LanguageProvider } from "./utils/LanguageContext";
@@ -74,20 +73,10 @@ function AuthenticatedApp(): JSX.Element {
      */
     const renderPage = (): JSX.Element => {
         switch (currentPage) {
-            case "intro":
-                return (
-                    <IntroPage
-                        onGetStarted={() => setCurrentPage("project-list")}
-                        primaryLabel="Open Workspace"
-                        secondaryLabel="Back to Projects"
-                        onSecondaryAction={() => setCurrentPage("project-list")}
-                    />
-                );
             case "project-list":
                 return (
                     <ProjectListPage 
                         onProjectSelect={handleProjectSelect}
-                        onNavigateToIntro={() => setCurrentPage("intro")}
                         onNavigateToProfile={() => setCurrentPage("profile")}
                     />
                 );
@@ -96,7 +85,6 @@ function AuthenticatedApp(): JSX.Element {
                     return (
                         <ProjectListPage 
                             onProjectSelect={handleProjectSelect}
-                            onNavigateToIntro={() => setCurrentPage("intro")}
                             onNavigateToProfile={() => setCurrentPage("profile")}
                         />
                     );
@@ -128,7 +116,6 @@ function AuthenticatedApp(): JSX.Element {
                 return (
                     <ProjectListPage 
                         onProjectSelect={handleProjectSelect}
-                        onNavigateToIntro={() => setCurrentPage("intro")}
                         onNavigateToProfile={() => setCurrentPage("profile")}
                     />
                 );
@@ -137,7 +124,6 @@ function AuthenticatedApp(): JSX.Element {
 
     const showSidebar =
         currentPage !== "project-list" &&
-        currentPage !== "intro" &&
         currentPage !== "profile";
 
     return (
@@ -165,9 +151,7 @@ function AuthenticatedApp(): JSX.Element {
  */
 function AppRouter(): JSX.Element {
     const { isAuthenticated, isLoading } = useAuth();
-    const [publicPage, setPublicPage] = useState<
-        "intro" | "login" | "signup"
-    >("intro");
+    const [publicPage, setPublicPage] = useState<"login" | "signup">("login");
 
     if (isLoading) {
         return (
@@ -180,10 +164,6 @@ function AppRouter(): JSX.Element {
 
     if (!isAuthenticated) {
         switch (publicPage) {
-            case "intro":
-                return (
-                    <IntroPage onGetStarted={() => setPublicPage("login")} />
-                );
             case "signup":
                 return (
                     <SignUpPage
@@ -196,7 +176,6 @@ function AppRouter(): JSX.Element {
                 return (
                     <LoginPage
                         onNavigateToSignUp={() => setPublicPage("signup")}
-                        onNavigateToIntro={() => setPublicPage("intro")}
                     />
                 );
         }

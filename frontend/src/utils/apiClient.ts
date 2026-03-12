@@ -15,23 +15,12 @@ import {
     Project,
 } from "../types/api";
 import { info, error as logError } from "./logger";
+import { AUTH_UNAUTHORIZED_EVENT } from "./authEvents";
 
 const API_BASE_URL = (
     import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1"
 ).replace(/\/$/, "");
 const REQUEST_TIMEOUT = 5000;
-
-const DEV_SAMPLE_ALERT: Alert = {
-    id: "dev-sample-flow-log",
-    sourceIP: "185.143.223.41",
-    destIP: "192.168.0.24",
-    protocol: "TCP/443",
-    inBytes: 18432,
-    outBytes: 927104,
-    status: "Attack",
-    timestamp: "23:59:59",
-    score: 0.9842,
-};
 
 /**
  * Converts backend protocol number to string format.
@@ -113,6 +102,23 @@ const getActiveProjectId = (): string | null => {
 };
 
 /**
+ * Clears persisted auth state when the backend rejects the current token.
+ *
+ * @returns {void}
+ */
+const handleUnauthorizedResponse = (): void => {
+    if (!getAccessToken()) {
+        return;
+    }
+
+    localStorage.removeItem("auth_tokens");
+    localStorage.removeItem("auth_user");
+    localStorage.removeItem("active_project_id");
+    localStorage.removeItem("active_project_name");
+    window.dispatchEvent(new Event(AUTH_UNAUTHORIZED_EVENT));
+};
+
+/**
  * Performs a fetch request with timeout and auth headers.
  * 
  * @param {string} url - The URL to fetch
@@ -150,6 +156,11 @@ const fetchWithTimeout = async (
             signal: controller.signal,
         });
         clearTimeout(timeoutId);
+
+        if (useAuth && response.status === 401) {
+            handleUnauthorizedResponse();
+        }
+
         return response;
     } catch (err) {
         clearTimeout(timeoutId);
@@ -180,14 +191,11 @@ export const fetchAlerts = async (): Promise<AlertsResponse> => {
         await response.json();
 
     const alerts = backendResponse.data.content.map(convertLogToAlert);
-    const alertsWithDevSample = import.meta.env.DEV && alerts.length === 0
-        ? [DEV_SAMPLE_ALERT]
-        : alerts;
 
     info("Alerts data fetched from API");
     return {
-        alerts: alertsWithDevSample,
-        totalCount: alertsWithDevSample.length,
+        alerts,
+        totalCount: alerts.length,
         lastUpdated: new Date().toISOString(),
     };
 };
@@ -199,10 +207,6 @@ export const fetchAlerts = async (): Promise<AlertsResponse> => {
  * @returns {Promise<Alert>} Alert detail data
  */
 export const fetchAlertDetail = async (alertId: string): Promise<Alert> => {
-    if (import.meta.env.DEV && alertId === DEV_SAMPLE_ALERT.id) {
-        return DEV_SAMPLE_ALERT;
-    }
-
     const projectId = getActiveProjectId();
     if (!projectId) {
         throw new Error("No active project selected");

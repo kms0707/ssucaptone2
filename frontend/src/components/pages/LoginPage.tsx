@@ -4,11 +4,10 @@ import { useAuth } from "../../contexts/AuthContext";
 
 interface LoginPageProps {
     onNavigateToSignUp: () => void;
-    onNavigateToIntro: () => void;
 }
 
 /**
- * Login page component with ID and password authentication.
+ * Login page component with email and password authentication.
  * Provides form validation and error handling.
  * 
  * @param {LoginPageProps} props - Component properties
@@ -17,10 +16,9 @@ interface LoginPageProps {
  */
 export function LoginPage({
     onNavigateToSignUp,
-    onNavigateToIntro,
 }: LoginPageProps) {
     const { login } = useAuth();
-    const [userId, setUserId] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
@@ -39,8 +37,8 @@ export function LoginPage({
 
         try {
             const success = await login({
-                username: userId,
-                password: password,
+                username: email,
+                password,
             });
 
             if (!success) {
@@ -72,17 +70,17 @@ export function LoginPage({
                         <div>
                             <label className="text-[10px] text-gray-600 
                                 uppercase block mb-1.5">
-                                User ID
+                                Email
                             </label>
                             <input
-                                type="text"
-                                value={userId}
-                                onChange={(e) => setUserId(e.target.value)}
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 className="w-full bg-black border 
                                     border-gray-800 px-3 py-2 text-xs 
                                     text-gray-300 focus:outline-none 
                                     focus:border-gray-700"
-                                placeholder="Enter your user ID"
+                                placeholder="email@example.com"
                                 required
                             />
                         </div>
@@ -149,14 +147,6 @@ export function LoginPage({
                                     underline"
                             >
                                 Sign up
-                            </button>
-                        </p>
-                        <p className="text-center mt-2">
-                            <button
-                                onClick={onNavigateToIntro}
-                                className="text-[10px] text-gray-500 hover:text-gray-300 underline"
-                            >
-                                About this app
                             </button>
                         </p>
                     </div>

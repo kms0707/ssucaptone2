@@ -7,7 +7,6 @@ import {
     User,
     LogOut,
     CircleUserRound,
-    Info,
 } from "lucide-react";
 import { fetchProjects, createProject } from "../../utils/apiClient";
 import { Project } from "../../types/api";
@@ -26,7 +25,6 @@ import { Avatar, AvatarFallback } from "../ui/avatar";
 
 interface ProjectListPageProps {
     onProjectSelect: (projectId: number, projectName: string) => void;
-    onNavigateToIntro: () => void;
     onNavigateToProfile: () => void;
 }
 
@@ -39,7 +37,6 @@ interface ProjectListPageProps {
  */
 export function ProjectListPage({ 
     onProjectSelect,
-    onNavigateToIntro,
     onNavigateToProfile,
 }: ProjectListPageProps): JSX.Element {
     const { t } = useLanguage();
@@ -177,10 +174,10 @@ export function ProjectListPage({
             <div className="max-w-6xl mx-auto">
                 <div className="mb-6 flex items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-lg text-white mb-1">
+                        <h1 className="text-2xl font-semibold text-white mb-1.5">
                             {t("selectProject")}
                         </h1>
-                        <p className="text-gray-600 text-[10px]">
+                        <p className="text-gray-500 text-sm">
                             Choose a project to monitor
                         </p>
                     </div>
@@ -196,10 +193,10 @@ export function ProjectListPage({
                                     </AvatarFallback>
                                 </Avatar>
                                 <div className="min-w-0">
-                                    <p className="text-xs text-white truncate">
+                                    <p className="text-sm text-white truncate">
                                         {userDisplayName}
                                     </p>
-                                    <p className="text-[10px] text-gray-600 truncate">
+                                    <p className="text-xs text-gray-500 truncate">
                                         {user?.email || "Signed in"}
                                     </p>
                                 </div>
@@ -213,13 +210,6 @@ export function ProjectListPage({
                                 Account
                             </DropdownMenuLabel>
                             <DropdownMenuSeparator className="bg-gray-800" />
-                            <DropdownMenuItem
-                                onClick={onNavigateToIntro}
-                                className="text-xs focus:bg-gray-800 focus:text-white rounded-none"
-                            >
-                                <Info className="w-3.5 h-3.5 text-gray-500" />
-                                About
-                            </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={onNavigateToProfile}
                                 className="text-xs focus:bg-gray-800 focus:text-white rounded-none"
@@ -241,7 +231,7 @@ export function ProjectListPage({
                 {error && (
                     <div className="bg-red-900/20 border border-red-800 
                         p-3 mb-4">
-                        <p className="text-red-400 text-xs">{error}</p>
+                        <p className="text-red-400 text-sm">{error}</p>
                     </div>
                 )}
 
@@ -251,8 +241,8 @@ export function ProjectListPage({
                         <div
                             key={project.id}
                             onClick={() => onProjectSelect(project.id, project.name)}
-                            className="bg-gray-900 border border-gray-800 
-                                p-4 hover:border-teal-700 
+                            className="bg-gray-900 border border-gray-800
+                                p-5 hover:border-teal-700
                                 hover:bg-gray-800/50 transition-all 
                                 cursor-pointer group"
                         >
@@ -263,7 +253,7 @@ export function ProjectListPage({
                                         group-hover:text-teal-400 
                                         transition-colors" 
                                     />
-                                    <h3 className="text-sm text-white">
+                                    <h3 className="text-base font-medium text-white">
                                         {project.name}
                                     </h3>
                                 </div>
@@ -273,12 +263,12 @@ export function ProjectListPage({
                                         : "bg-red-500"
                                 }`} />
                             </div>
-                            <p className="text-gray-500 text-[10px] mb-3 
+                            <p className="text-gray-400 text-sm mb-4
                                 line-clamp-2">
                                 {project.description || "No description"}
                             </p>
                             <div className="flex items-center gap-2 
-                                text-[9px] text-gray-600">
+                                text-xs text-gray-500">
                                 <Key className="w-3 h-3" />
                                 <span className="font-mono">
                                     {project.apiKey.substring(0, 16)}...
@@ -300,7 +290,7 @@ export function ProjectListPage({
                                 group-hover:text-teal-400 
                                 transition-colors mx-auto mb-2" 
                             />
-                            <p className="text-gray-500 text-xs">
+                            <p className="text-gray-400 text-sm">
                                 Create New Project
                             </p>
                         </div>
@@ -312,14 +302,14 @@ export function ProjectListPage({
                         items-center justify-center z-50">
                         <div className="bg-gray-900 border border-gray-800 
                             p-6 max-w-md w-full mx-4">
-                            <h2 className="text-white mb-4">
+                            <h2 className="text-xl font-semibold text-white mb-5">
                                 Create New Project
                             </h2>
                             
                             <div className="space-y-3 mb-4">
                                 <div>
-                                    <label className="text-[10px] 
-                                        text-gray-600 uppercase block mb-1.5">
+                                    <label className="text-xs text-gray-500
+                                        uppercase tracking-[0.08em] block mb-2">
                                         Project Name
                                     </label>
                                     <input
@@ -327,8 +317,8 @@ export function ProjectListPage({
                                         value={newProjectName}
                                         onChange={(e) => 
                                             setNewProjectName(e.target.value)}
-                                        className="w-full bg-black border 
-                                            border-gray-800 px-3 py-2 text-xs 
+                                        className="w-full bg-black border
+                                            border-gray-800 px-3.5 py-2.5 text-sm
                                             text-gray-300 focus:outline-none 
                                             focus:border-gray-700"
                                         placeholder="Enter project name"
@@ -336,16 +326,16 @@ export function ProjectListPage({
                                     />
                                 </div>
                                 <div>
-                                    <label className="text-[10px] 
-                                        text-gray-600 uppercase block mb-1.5">
+                                    <label className="text-xs text-gray-500
+                                        uppercase tracking-[0.08em] block mb-2">
                                         Description
                                     </label>
                                     <textarea
                                         value={newProjectDesc}
                                         onChange={(e) => 
                                             setNewProjectDesc(e.target.value)}
-                                        className="w-full bg-black border 
-                                            border-gray-800 px-3 py-2 text-xs 
+                                        className="w-full bg-black border
+                                            border-gray-800 px-3.5 py-2.5 text-sm
                                             text-gray-300 focus:outline-none 
                                             focus:border-gray-700 resize-none"
                                         placeholder="Enter description"
@@ -359,10 +349,10 @@ export function ProjectListPage({
                                 <button
                                     onClick={handleCreateProject}
                                     disabled={creating}
-                                    className="flex-1 bg-teal-600 border 
+                                    className="flex-1 bg-teal-600 border
                                         border-teal-600 px-4 py-2 
                                         text-white hover:bg-teal-700 
-                                        transition-colors text-xs 
+                                        transition-colors text-sm
                                         disabled:opacity-50"
                                 >
                                     {creating ? "Creating..." : "Create"}
@@ -379,7 +369,7 @@ export function ProjectListPage({
                                         border-gray-700 px-4 py-2 
                                         text-gray-400 hover:text-gray-300 
                                         hover:bg-gray-700 transition-colors 
-                                        text-xs disabled:opacity-50"
+                                        text-sm disabled:opacity-50"
                                 >
                                     Cancel
                                 </button>

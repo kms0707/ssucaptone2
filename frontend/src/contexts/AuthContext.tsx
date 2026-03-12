@@ -12,6 +12,7 @@ import type {
 } from '../types/auth';
 import * as logger from '../utils/logger';
 import { loginUser, signupUser } from '../utils/apiClient';
+import { AUTH_UNAUTHORIZED_EVENT } from '../utils/authEvents';
 
 const AuthContext = createContext<AuthContextState | undefined>(undefined);
 
@@ -36,11 +37,28 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     const [isLoading, setIsLoading] = useState<boolean>(true);
 
     /**
+     * Clears authentication state from storage and memory.
+     */
+    const clearAuthState = (): void => {
+        localStorage.removeItem('auth_tokens');
+        localStorage.removeItem('auth_user');
+        localStorage.removeItem('active_project_id');
+        localStorage.removeItem('active_project_name');
+        setToken(null);
+        setUser(null);
+        setIsAuthenticated(false);
+    };
+
+    /**
      * Load authentication state from localStorage on mount
      */
     useEffect(() => {
         const storedTokens = localStorage.getItem('auth_tokens');
         const storedUser = localStorage.getItem('auth_user');
+        const handleUnauthorized = (): void => {
+            clearAuthState();
+            logger.info('Auth session cleared after unauthorized response');
+        };
         
         if (storedTokens && storedUser) {
             try {
@@ -54,12 +72,19 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
                 });
             } catch (error) {
                 logger.error('Failed to restore auth session', error);
-                localStorage.removeItem('auth_tokens');
-                localStorage.removeItem('auth_user');
+                clearAuthState();
             }
         }
 
         setIsLoading(false);
+        window.addEventListener(AUTH_UNAUTHORIZED_EVENT, handleUnauthorized);
+
+        return () => {
+            window.removeEventListener(
+                AUTH_UNAUTHORIZED_EVENT,
+                handleUnauthorized
+            );
+        };
     }, []);
 
     /**
@@ -135,11 +160,7 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
      * Clears authentication state and session storage
      */
     const logout = (): void => {
-        localStorage.removeItem('auth_tokens');
-        localStorage.removeItem('auth_user');
-        setToken(null);
-        setUser(null);
-        setIsAuthenticated(false);
+        clearAuthState();
         logger.info('User logged out');
     };
 

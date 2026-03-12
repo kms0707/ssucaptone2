@@ -2008,7 +2008,7 @@
 
 
 :root {
-  --font-size: 13px;
+  --font-size: 15px;
   --background: #fff;
   --foreground: oklch(.145 0 0);
   --card: #fff;
@@ -2110,6 +2110,21 @@ html {
 
 .hover\:scrollbar-thumb-gray-600::-webkit-scrollbar-thumb:hover {
   background-color: #4b5563;
+}
+
+[class*="text-[9px]"] {
+  font-size: .6875rem;
+  line-height: 1.45;
+}
+
+[class*="text-[10px]"] {
+  font-size: .75rem;
+  line-height: 1.45;
+}
+
+[class*="text-[11px]"] {
+  font-size: .8125rem;
+  line-height: 1.45;
 }
 
 @property --tw-translate-x {
