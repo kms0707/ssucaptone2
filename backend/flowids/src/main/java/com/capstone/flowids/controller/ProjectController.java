@@ -36,6 +36,15 @@ public class ProjectController {
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteProject(
+            Authentication authentication,
+            @PathVariable Long id) {
+        Long memberId = (Long) authentication.getPrincipal();
+        projectService.deleteProject(id, memberId);
+        return ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/api-key/reissue")
     public ResponseEntity<ApiResponse<ProjectResponse>> reissueApiKey(
             Authentication authentication,

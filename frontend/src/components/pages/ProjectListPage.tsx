@@ -4,11 +4,16 @@ import {
     Plus,
     Key,
     Loader2,
+    Trash2,
     User,
     LogOut,
     CircleUserRound,
 } from "lucide-react";
-import { fetchProjects, createProject } from "../../utils/apiClient";
+import {
+    fetchProjects,
+    createProject,
+    deleteProject,
+} from "../../utils/apiClient";
 import { Project } from "../../types/api";
 import { useLanguage } from "../../utils/LanguageContext";
 import { info, error as logError } from "../../utils/logger";
@@ -48,6 +53,21 @@ export function ProjectListPage({
     const [newProjectName, setNewProjectName] = useState("");
     const [newProjectDesc, setNewProjectDesc] = useState("");
     const [creating, setCreating] = useState(false);
+    const [deletingProjectId, setDeletingProjectId] = useState<number | null>(null);
+    const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
+
+    const syncStoredProjects = (nextProjects: Project[]): void => {
+        localStorage.setItem("projects", JSON.stringify(nextProjects));
+    };
+
+    const clearActiveProjectSelection = (projectId: number): void => {
+        if (localStorage.getItem("active_project_id") !== projectId.toString()) {
+            return;
+        }
+
+        localStorage.removeItem("active_project_id");
+        localStorage.removeItem("active_project_name");
+    };
 
     /**
      * Loads projects from the backend.
@@ -60,7 +80,7 @@ export function ProjectListPage({
             setError(null);
             const data = await fetchProjects();
             setProjects(data);
-            localStorage.setItem("projects", JSON.stringify(data));
+            syncStoredProjects(data);
             info("Projects loaded successfully from API");
         } catch (err) {
             const message = err instanceof Error 
@@ -93,7 +113,7 @@ export function ProjectListPage({
             );
             const nextProjects = [...projects, newProject];
             setProjects(nextProjects);
-            localStorage.setItem("projects", JSON.stringify(nextProjects));
+            syncStoredProjects(nextProjects);
             setShowCreateForm(false);
             setNewProjectName("");
             setNewProjectDesc("");
@@ -106,6 +126,42 @@ export function ProjectListPage({
             logError("Failed to create project", err);
         } finally {
             setCreating(false);
+        }
+    };
+
+    /**
+     * Deletes the selected project.
+     *
+     * @returns {Promise<void>}
+     */
+    const handleDeleteProject = async (): Promise<void> => {
+        if (!projectToDelete) {
+            return;
+        }
+
+        const targetProject = projectToDelete;
+
+        try {
+            setDeletingProjectId(targetProject.id);
+            setError(null);
+            await deleteProject(targetProject.id);
+            setProjects((currentProjects) => {
+                const nextProjects = currentProjects.filter(
+                    (project) => project.id !== targetProject.id
+                );
+                syncStoredProjects(nextProjects);
+                return nextProjects;
+            });
+            clearActiveProjectSelection(targetProject.id);
+            setProjectToDelete(null);
+        } catch (err) {
+            const message = err instanceof Error
+                ? err.message
+                : "Failed to delete project";
+            setError(message);
+            logError("Failed to delete project", err);
+        } finally {
+            setDeletingProjectId(null);
         }
     };
 
@@ -240,28 +296,60 @@ export function ProjectListPage({
                     {projects.map((project) => (
                         <div
                             key={project.id}
-                            onClick={() => onProjectSelect(project.id, project.name)}
+                            onClick={() => {
+                                if (deletingProjectId !== project.id) {
+                                    onProjectSelect(project.id, project.name);
+                                }
+                            }}
                             className="bg-gray-900 border border-gray-800
                                 p-5 hover:border-teal-700
                                 hover:bg-gray-800/50 transition-all 
                                 cursor-pointer group"
                         >
                             <div className="flex items-start justify-between 
-                                mb-3">
-                                <div className="flex items-center gap-2">
+                                mb-3 gap-3">
+                                <div className="flex items-center gap-2 min-w-0">
                                     <Folder className="w-4 h-4 text-gray-500 
                                         group-hover:text-teal-400 
                                         transition-colors" 
                                     />
-                                    <h3 className="text-base font-medium text-white">
+                                    <h3 className="text-base font-medium text-white truncate">
                                         {project.name}
                                     </h3>
                                 </div>
-                                <div className={`w-2 h-2 ${
-                                    project.apiKeyStatus === "ACTIVE" 
-                                        ? "bg-green-500" 
-                                        : "bg-red-500"
-                                }`} />
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <div className={`w-2 h-2 rounded-full ${
+                                        project.apiKeyStatus === "ACTIVE"
+                                            ? "bg-green-500"
+                                            : "bg-red-500"
+                                    }`} />
+                                    <button
+                                        type="button"
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            setError(null);
+                                            setProjectToDelete(project);
+                                        }}
+                                        disabled={deletingProjectId === project.id}
+                                        className="inline-flex items-center gap-1.5
+                                            border border-red-900/70 bg-red-950/40
+                                            px-2 py-1 text-xs text-red-300
+                                            hover:bg-red-900/30 transition-colors
+                                            disabled:cursor-not-allowed
+                                            disabled:opacity-60"
+                                    >
+                                        {deletingProjectId === project.id ? (
+                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                        ) : (
+                                            <Trash2 className="w-3 h-3" />
+                                        )}
+                                        <span>
+                                            {deletingProjectId === project.id
+                                                ? "Deleting..."
+                                                : "Delete"}
+                                        </span>
+                                    </button>
+                                </div>
                             </div>
                             <p className="text-gray-400 text-sm mb-4
                                 line-clamp-2">
@@ -370,6 +458,66 @@ export function ProjectListPage({
                                         text-gray-400 hover:text-gray-300 
                                         hover:bg-gray-700 transition-colors 
                                         text-sm disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {projectToDelete && (
+                    <div className="fixed inset-0 bg-black/80 flex
+                        items-center justify-center z-50">
+                        <div className="bg-gray-900 border border-red-900/70
+                            p-6 max-w-md w-full mx-4">
+                            <h2 className="text-xl font-semibold text-white mb-3">
+                                Delete Project
+                            </h2>
+                            <p className="text-sm text-gray-400 mb-2">
+                                Remove{" "}
+                                <span className="text-white font-medium">
+                                    {projectToDelete.name}
+                                </span>
+                                {" "}from your project list.
+                            </p>
+                            <p className="text-xs text-gray-500 mb-5">
+                                The project's API key will stop working and
+                                this action cannot be undone.
+                            </p>
+
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleDeleteProject}
+                                    disabled={
+                                        deletingProjectId === projectToDelete.id
+                                    }
+                                    className="flex-1 bg-red-700 border
+                                        border-red-700 px-4 py-2 text-white
+                                        hover:bg-red-800 transition-colors
+                                        text-sm disabled:opacity-50
+                                        disabled:cursor-not-allowed"
+                                >
+                                    {deletingProjectId === projectToDelete.id ? (
+                                        <span className="inline-flex items-center gap-2">
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                            Deleting...
+                                        </span>
+                                    ) : (
+                                        "Delete Project"
+                                    )}
+                                </button>
+                                <button
+                                    onClick={() => setProjectToDelete(null)}
+                                    disabled={
+                                        deletingProjectId === projectToDelete.id
+                                    }
+                                    className="flex-1 bg-gray-800 border
+                                        border-gray-700 px-4 py-2 text-gray-400
+                                        hover:text-gray-300 hover:bg-gray-700
+                                        transition-colors text-sm
+                                        disabled:opacity-50
+                                        disabled:cursor-not-allowed"
                                 >
                                     Cancel
                                 </button>

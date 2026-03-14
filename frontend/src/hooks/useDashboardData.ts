@@ -80,6 +80,29 @@ const calculateKPIData = (alerts: Alert[]): KPIData => {
     };
 };
 
+const mergeAlerts = (
+    previousAlerts: Alert[],
+    latestAlerts: Alert[]
+): Alert[] => {
+    const alertsById = new Map(
+        previousAlerts.map((alert) => [alert.id, alert])
+    );
+
+    latestAlerts.forEach((alert) => {
+        const existingAlert = alertsById.get(alert.id);
+        alertsById.set(
+            alert.id,
+            existingAlert ? { ...existingAlert, ...alert } : alert
+        );
+    });
+
+    return Array.from(alertsById.values()).sort((a, b) => {
+        const timeA = a.timestamp || "00:00:00";
+        const timeB = b.timestamp || "00:00:00";
+        return timeB.localeCompare(timeA);
+    });
+};
+
 /**
  * Fetches and manages dashboard data with automatic polling.
  * 
@@ -105,26 +128,8 @@ export const useDashboardData = (): DashboardData => {
             setAlertsError(null);
             const response = await fetchAlerts();
             
-            // Accumulate new alerts with existing ones
-            setAlerts(prevAlerts => {
-                // Create a Set of existing alert IDs
-                const existingIds = new Set(prevAlerts.map(a => a.id));
-                
-                // Filter out duplicates from new alerts
-                const newAlerts = response.alerts.filter(
-                    alert => !existingIds.has(alert.id)
-                );
-                
-                // Combine and sort by timestamp (newest first)
-                const combined = [...newAlerts, ...prevAlerts];
-                combined.sort((a, b) => {
-                    const timeA = a.timestamp || "00:00:00";
-                    const timeB = b.timestamp || "00:00:00";
-                    return timeB.localeCompare(timeA);
-                });
-                
-                return combined;
-            });
+            // Replace existing rows when the backend updates the same alert ID.
+            setAlerts((prevAlerts) => mergeAlerts(prevAlerts, response.alerts));
             
             info("Alerts data updated successfully");
         } catch (err) {

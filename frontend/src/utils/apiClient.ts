@@ -427,6 +427,36 @@ export const createProject = async (
 };
 
 /**
+ * Deletes a project.
+ *
+ * @param {number} projectId - Project ID
+ * @returns {Promise<void>}
+ */
+export const deleteProject = async (projectId: number): Promise<void> => {
+    const response = await fetchWithTimeout(
+        `${API_BASE_URL}/projects/${projectId}`,
+        {
+            method: "DELETE",
+        }
+    );
+
+    if (!response.ok) {
+        try {
+            const errorData = await response.json();
+            throw new Error(errorData.message || "Project deletion failed");
+        } catch (err) {
+            if (err instanceof Error) {
+                throw err;
+            }
+
+            throw new Error("Project deletion failed");
+        }
+    }
+
+    info("Project deleted successfully", { projectId });
+};
+
+/**
  * Handles API errors and returns structured error data.
  * 
  * @param {unknown} err - The error object

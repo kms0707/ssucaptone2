@@ -71,6 +71,16 @@ public class ProjectService {
         return new ProjectResponse(project);
     }
 
+    @Transactional
+    public void deleteProject(Long projectId, Long memberId) {
+        Project project = projectRepository.findByIdAndMember_Id(projectId, memberId)
+                .orElseThrow(() -> new EntityNotFoundException("Project not found"));
+
+        apiKeyHistoryRepository.deleteAllByProjectId(projectId);
+        redisTemplate.delete("APIKey:" + project.getApiKey());
+        projectRepository.delete(project);
+    }
+
     private String generateApiKey() {
         byte[] bytes = new byte[32];
         new SecureRandom().nextBytes(bytes);
