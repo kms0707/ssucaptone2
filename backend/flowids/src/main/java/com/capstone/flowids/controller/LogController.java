@@ -39,4 +39,14 @@ public class LogController {
         Page<FlowLogResponse> result = logService.getLogs(memberId, projectId, onlyAnomalies, page, size);
         return ResponseEntity.ok(ApiResponse.success(result));
     }
+
+    @GetMapping("/{logId}")
+    public ResponseEntity<ApiResponse<FlowLogResponse>> getLogDetail(
+            Authentication authentication,
+            @PathVariable String logId,
+            @RequestParam Long projectId) {
+        Long memberId = (Long) authentication.getPrincipal();
+        FlowLogResponse result = logService.getLogDetail(memberId, projectId, logId);
+        return ResponseEntity.ok(ApiResponse.success(result));
+    }
 }

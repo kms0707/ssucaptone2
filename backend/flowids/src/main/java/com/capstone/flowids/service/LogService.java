@@ -102,20 +102,45 @@ public class LogService {
         }
     }
 
-    public Page<FlowLogResponse> getLogs(Long memberId, Long projectId, Boolean onlyAnomalies, int page, int size) {
-        // 요청한 멤버의 프로젝트인지 검증
+    public Page<FlowLogResponse> getLogs(
+            Long memberId,
+            Long projectId,
+            Boolean onlyAnomalies,
+            int page,
+            int size
+    ) {
         projectRepository.findByIdAndMember_Id(projectId, memberId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "접근 권한이 없는 프로젝트입니다"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Project access denied"));
 
-        PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "ingestedAt"));
+        PageRequest pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.DESC, "ingestedAt")
+        );
         String projectIdStr = String.valueOf(projectId);
 
         if (Boolean.TRUE.equals(onlyAnomalies)) {
-            return flowLogRepository.findByProjectIdAndIsAnomaly(projectIdStr, true, pageable)
-                    .map(FlowLogResponse::new);
+            return flowLogRepository.findByProjectIdAndIsAnomaly(
+                    projectIdStr,
+                    true,
+                    pageable
+            ).map(FlowLogResponse::new);
         }
+
         return flowLogRepository.findByProjectId(projectIdStr, pageable)
                 .map(FlowLogResponse::new);
+    }
+
+    public FlowLogResponse getLogDetail(Long memberId, Long projectId, String logId) {
+        projectRepository.findByIdAndMember_Id(projectId, memberId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Project access denied"));
+
+        String projectIdStr = String.valueOf(projectId);
+
+        return flowLogRepository.findById(logId)
+                .filter(flowLog -> projectIdStr.equals(flowLog.getProjectId()))
+                .map(FlowLogResponse::new)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Flow log not found"));
     }
 
     private Long resolveProjectId(String apiKey) {
@@ -127,10 +152,15 @@ public class LogService {
         }
 
         Long projectId = projectRepository.findByApiKeyAndApiKeyStatus(apiKey, "ACTIVE")
-                .orElseThrow(() -> new InvalidApiKeyException("유효하지 않은 API Key입니다"))
+                .orElseThrow(() -> new InvalidApiKeyException("Invalid API key"))
                 .getId();
 
-        redisTemplate.opsForValue().set(redisKey, String.valueOf(projectId), API_KEY_CACHE_TTL_HOURS, TimeUnit.HOURS);
+        redisTemplate.opsForValue().set(
+                redisKey,
+                String.valueOf(projectId),
+                API_KEY_CACHE_TTL_HOURS,
+                TimeUnit.HOURS
+        );
         return projectId;
     }
 }

@@ -20,6 +20,7 @@ export interface Alert {
     outBytes: number;
     status: AlertStatus;
     timestamp: string;
+    ingestedAt?: string;
     score?: number;
 }
 
@@ -30,6 +31,9 @@ export interface AlertsResponse {
     alerts: Alert[];
     totalCount: number;
     lastUpdated: string;
+    currentPage: number;
+    pageSize: number;
+    totalPages: number;
 }
 
 /**

@@ -9,7 +9,7 @@ interface SignUpPageProps {
 
 /**
  * Sign up page component with registration form.
- * Includes validation, terms acceptance, and phone verification.
+ * Includes validation and terms acceptance.
  * 
  * @param {SignUpPageProps} props - Component properties
  * @param {Function} props.onSignUp - Callback when signup is successful
@@ -26,14 +26,11 @@ export function SignUpPage({
         email: "",
         password: "",
         confirmPassword: "",
-        phone: "",
-        verificationCode: "",
     });
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [termsAccepted, setTermsAccepted] = useState(false);
     const [privacyAccepted, setPrivacyAccepted] = useState(false);
-    const [codeSent, setCodeSent] = useState(false);
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
@@ -46,20 +43,6 @@ export function SignUpPage({
      */
     const updateField = (field: string, value: string): void => {
         setFormData((prev) => ({ ...prev, [field]: value }));
-    };
-
-    /**
-     * Sends verification code to phone number.
-     * 
-     * @returns {void}
-     */
-    const handleSendCode = (): void => {
-        if (formData.phone.length < 10) {
-            setError("Invalid phone number");
-            return;
-        }
-        setCodeSent(true);
-        setError("");
     };
 
     /**
@@ -85,11 +68,6 @@ export function SignUpPage({
 
         if (!termsAccepted || !privacyAccepted) {
             setError("Please accept all agreements");
-            return false;
-        }
-
-        if (!codeSent || !formData.verificationCode) {
-            setError("Phone verification required");
             return false;
         }
 
@@ -273,62 +251,6 @@ export function SignUpPage({
                                 </div>
                             </div>
                         </div>
-
-                        <div className="mb-4">
-                            <label className="text-[10px] text-gray-600 
-                                uppercase block mb-1.5">
-                                Phone Number
-                            </label>
-                            <div className="flex gap-2">
-                                <input
-                                    type="tel"
-                                    value={formData.phone}
-                                    onChange={(e) => 
-                                        updateField("phone", e.target.value)}
-                                    className="flex-1 bg-black border 
-                                        border-gray-800 px-3 py-2 text-xs 
-                                        text-gray-300 focus:outline-none 
-                                        focus:border-gray-700"
-                                    placeholder="010-1234-5678"
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={handleSendCode}
-                                    disabled={codeSent}
-                                    className="bg-gray-800 border 
-                                        border-gray-700 px-3 py-2 
-                                        text-gray-400 hover:text-gray-300 
-                                        hover:bg-gray-700 transition-colors 
-                                        text-xs whitespace-nowrap 
-                                        disabled:opacity-50"
-                                >
-                                    {codeSent ? "Code Sent" : "Send Code"}
-                                </button>
-                            </div>
-                        </div>
-
-                        {codeSent && (
-                            <div className="mb-4">
-                                <label className="text-[10px] text-gray-600 
-                                    uppercase block mb-1.5">
-                                    Verification Code
-                                </label>
-                                <input
-                                    type="text"
-                                    value={formData.verificationCode}
-                                    onChange={(e) => 
-                                        updateField("verificationCode", 
-                                            e.target.value)}
-                                    className="w-full bg-black border 
-                                        border-gray-800 px-3 py-2 text-xs 
-                                        text-gray-300 focus:outline-none 
-                                        focus:border-gray-700"
-                                    placeholder="Enter 6-digit code"
-                                    required
-                                />
-                            </div>
-                        )}
 
                         <div className="mb-4 space-y-2 p-3 bg-black border 
                             border-gray-800">

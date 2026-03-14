@@ -3,6 +3,13 @@ import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import {
+    Pagination,
+    PaginationContent,
+    PaginationItem,
+    PaginationNext,
+    PaginationPrevious,
+} from "./ui/pagination";
+import {
     Table,
     TableBody,
     TableCell,
@@ -21,6 +28,11 @@ interface AlertsTableProps {
     error: string | null;
     onAlertClick?: (alertId: string) => void;
     isMonitoring?: boolean;
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    pageSize: number;
+    onPageChange: (page: number) => void;
 }
 
 const formatNumber = (value: number | null | undefined): string => {
@@ -75,7 +87,12 @@ export function AlertsTable({
     loading, 
     error, 
     onAlertClick,
-    isMonitoring: _isMonitoring
+    isMonitoring = false,
+    currentPage,
+    totalPages,
+    totalCount,
+    pageSize,
+    onPageChange,
 }: AlertsTableProps) {
     const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = useState("");
@@ -116,6 +133,9 @@ export function AlertsTable({
                     tracking-wider">
                     {t("realTimeAlerts")}
                 </h3>
+                <div className="text-[10px] text-gray-600">
+                    {isMonitoring ? "Live page" : `Page ${currentPage + 1}`}
+                </div>
             </div>
         );
     };
@@ -244,52 +264,105 @@ export function AlertsTable({
      * @returns {JSX.Element} The table component
      */
     const renderTable = (): JSX.Element => {
+        const pageStart = totalCount === 0
+            ? 0
+            : currentPage * pageSize + 1;
+        const pageEnd = totalCount === 0
+            ? 0
+            : Math.min((currentPage + 1) * pageSize, totalCount);
+
         return (
-            <div className="border border-gray-800">
-                <div className="max-h-[650px] overflow-y-auto 
-                    scrollbar-thin scrollbar-track-gray-900 
-                    scrollbar-thumb-gray-700 hover:scrollbar-thumb-gray-600">
-                    <Table>
-                        <TableHeader className="sticky top-0 z-10">
-                            <TableRow className="bg-gray-900 
-                                border-gray-800 hover:bg-gray-900">
-                                <TableHead className="text-gray-600 
-                                    text-[10px] font-normal py-2 px-3">
-                                    {t("time")}
-                                </TableHead>
-                                <TableHead className="text-gray-600 
-                                    text-[10px] font-normal py-2 px-3">
-                                    {t("sourceIP")}
-                                </TableHead>
-                                <TableHead className="text-gray-600 
-                                    text-[10px] font-normal py-2 px-3">
-                                    {t("destinationIP")}
-                                </TableHead>
-                                <TableHead className="text-gray-600 
-                                    text-[10px] font-normal py-2 px-3">
-                                    {t("protocolPort")}
-                                </TableHead>
-                                <TableHead className="text-gray-600 
-                                    text-[10px] font-normal py-2 px-3">
-                                    {t("inBytes")}
-                                </TableHead>
-                                <TableHead className="text-gray-600 
-                                    text-[10px] font-normal py-2 px-3">
-                                    {t("outBytes")}
-                                </TableHead>
-                                <TableHead className="text-gray-600 
-                                    text-[10px] font-normal py-2 px-3">
-                                    {t("status")}
-                                </TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredAlerts.map((alert) => 
-                                renderAlertRow(alert)
-                            )}
-                        </TableBody>
-                    </Table>
+            <div className="space-y-3">
+                <div className="border border-gray-800">
+                    <div className="px-3 py-2 border-b border-gray-800
+                        text-[10px] text-gray-600">
+                        Showing {pageStart}-{pageEnd} of {totalCount}
+                    </div>
+                    <div className="max-h-[650px] overflow-y-auto 
+                        scrollbar-thin scrollbar-track-gray-900 
+                        scrollbar-thumb-gray-700 hover:scrollbar-thumb-gray-600">
+                        <Table>
+                            <TableHeader className="sticky top-0 z-10">
+                                <TableRow className="bg-gray-900 
+                                    border-gray-800 hover:bg-gray-900">
+                                    <TableHead className="text-gray-600 
+                                        text-[10px] font-normal py-2 px-3">
+                                        {t("time")}
+                                    </TableHead>
+                                    <TableHead className="text-gray-600 
+                                        text-[10px] font-normal py-2 px-3">
+                                        {t("sourceIP")}
+                                    </TableHead>
+                                    <TableHead className="text-gray-600 
+                                        text-[10px] font-normal py-2 px-3">
+                                        {t("destinationIP")}
+                                    </TableHead>
+                                    <TableHead className="text-gray-600 
+                                        text-[10px] font-normal py-2 px-3">
+                                        {t("protocolPort")}
+                                    </TableHead>
+                                    <TableHead className="text-gray-600 
+                                        text-[10px] font-normal py-2 px-3">
+                                        {t("inBytes")}
+                                    </TableHead>
+                                    <TableHead className="text-gray-600 
+                                        text-[10px] font-normal py-2 px-3">
+                                        {t("outBytes")}
+                                    </TableHead>
+                                    <TableHead className="text-gray-600 
+                                        text-[10px] font-normal py-2 px-3">
+                                        {t("status")}
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredAlerts.map((alert) => 
+                                    renderAlertRow(alert)
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </div>
+
+                {totalPages > 1 && (
+                    <Pagination className="justify-between">
+                        <PaginationContent className="w-full justify-between">
+                            <PaginationItem>
+                                <PaginationPrevious
+                                    href="#"
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        if (currentPage > 0) {
+                                            onPageChange(currentPage - 1);
+                                        }
+                                    }}
+                                    className={`rounded-none border border-gray-700
+                                        bg-gray-800 text-gray-300 hover:bg-gray-700
+                                        ${currentPage === 0 ? "pointer-events-none opacity-40" : ""}`}
+                                />
+                            </PaginationItem>
+                            <PaginationItem>
+                                <span className="px-3 py-2 text-[10px] text-gray-500">
+                                    Page {currentPage + 1} of {totalPages}
+                                </span>
+                            </PaginationItem>
+                            <PaginationItem>
+                                <PaginationNext
+                                    href="#"
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        if (currentPage + 1 < totalPages) {
+                                            onPageChange(currentPage + 1);
+                                        }
+                                    }}
+                                    className={`rounded-none border border-gray-700
+                                        bg-gray-800 text-gray-300 hover:bg-gray-700
+                                        ${currentPage + 1 >= totalPages ? "pointer-events-none opacity-40" : ""}`}
+                                />
+                            </PaginationItem>
+                        </PaginationContent>
+                    </Pagination>
+                )}
             </div>
         );
     };

@@ -26,6 +26,11 @@ interface DashboardData {
     startMonitoring: () => void;
     stopMonitoring: () => void;
     clearData: () => void;
+    currentPage: number;
+    totalPages: number;
+    totalCount: number;
+    pageSize: number;
+    goToPage: (page: number) => void;
 }
 
 /**
@@ -80,76 +85,14 @@ const calculateKPIData = (alerts: Alert[]): KPIData => {
     };
 };
 
-const mergeAlerts = (
-    previousAlerts: Alert[],
-    latestAlerts: Alert[]
-): Alert[] => {
-    const alertsById = new Map(
-        previousAlerts.map((alert) => [alert.id, alert])
-    );
-
-    latestAlerts.forEach((alert) => {
-        const existingAlert = alertsById.get(alert.id);
-        alertsById.set(
-            alert.id,
-            existingAlert ? { ...existingAlert, ...alert } : alert
-        );
-    });
-
-    return Array.from(alertsById.values()).sort((a, b) => {
-        const timeA = a.timestamp || "00:00:00";
-        const timeB = b.timestamp || "00:00:00";
-        return timeB.localeCompare(timeA);
-    });
-};
-
-/**
- * Fetches and manages dashboard data with automatic polling.
- * 
- * @returns {DashboardData} Dashboard data and loading states
- */
-export const useDashboardData = (): DashboardData => {
+export const useDashboardData = (projectId: number): DashboardData => {
     const [alerts, setAlerts] = useState<Alert[]>([]);
-    
     const [alertsLoading, setAlertsLoading] = useState(true);
-    
     const [alertsError, setAlertsError] = useState<string | null>(null);
-
-    const [isMonitoring, setIsMonitoring] = useState(false);
-    const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null);
-
-    /**
-     * Loads alerts data from the API.
-     * 
-     * @returns {Promise<void>}
-     */
-    const loadAlertsData = async (): Promise<void> => {
-        try {
-            setAlertsError(null);
-            const response = await fetchAlerts();
-            
-            // Replace existing rows when the backend updates the same alert ID.
-            setAlerts((prevAlerts) => mergeAlerts(prevAlerts, response.alerts));
-            
-            info("Alerts data updated successfully");
-        } catch (err) {
-            const message = err instanceof Error 
-                ? err.message 
-                : "Unknown error";
-            setAlertsError(message);
-        } finally {
-            setAlertsLoading(false);
-        }
-    };
-
-    /**
-     * Loads all dashboard data.
-     * 
-     * @returns {Promise<void>}
-     */
-    const loadAllData = async (): Promise<void> => {
-        await loadAlertsData();
-    };
+    const [currentPage, setCurrentPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalCount, setTotalCount] = useState(0);
+    const [pageSize, setPageSize] = useState(100);
 
     // Calculate traffic distribution from alerts data
     const calculatedTrafficData = useMemo(() => {
@@ -168,47 +111,6 @@ export const useDashboardData = (): DashboardData => {
     }, [alerts]);
 
     /**
-     * Starts monitoring with automatic polling.
-     * 
-     * @returns {void}
-     */
-    const startMonitoring = (): void => {
-        if (!isMonitoring) {
-            setIsMonitoring(true);
-            info("Monitoring started");
-            const id = setInterval(() => {
-                info("Polling dashboard data");
-                loadAllData();
-            }, POLLING_INTERVAL);
-            setIntervalId(id);
-        }
-    };
-
-    /**
-     * Stops monitoring and clears polling interval.
-     * 
-     * @returns {void}
-     */
-    const stopMonitoring = (): void => {
-        if (isMonitoring && intervalId) {
-            setIsMonitoring(false);
-            clearInterval(intervalId);
-            setIntervalId(null);
-            info("Monitoring stopped");
-        }
-    };
-
-    /**
-     * Manually refreshes all dashboard data.
-     * 
-     * @returns {void}
-     */
-    const refreshData = (): void => {
-        info("Manual refresh triggered");
-        loadAllData();
-    };
-
-    /**
      * Clears all dashboard data.
      * 
      * @returns {void}
@@ -218,19 +120,73 @@ export const useDashboardData = (): DashboardData => {
         setAlerts([]);
         setAlertsLoading(false);
         setAlertsError(null);
+        setTotalPages(0);
+        setTotalCount(0);
     };
 
     useEffect(() => {
-        loadAllData();
-        startMonitoring();
+        setCurrentPage(0);
+    }, [projectId]);
 
-        return () => {
-            if (intervalId) {
-                clearInterval(intervalId);
-                info("Dashboard unmounted - polling stopped");
+    useEffect(() => {
+        let isDisposed = false;
+        const shouldPoll = currentPage === 0;
+
+        setAlertsLoading(true);
+        info("Monitoring started", { projectId, currentPage });
+
+        const loadAlertsData = async (): Promise<void> => {
+            try {
+                setAlertsError(null);
+                const response = await fetchAlerts(currentPage, pageSize);
+                if (isDisposed) {
+                    return;
+                }
+
+                setAlerts(response.alerts);
+                setTotalPages(response.totalPages);
+                setTotalCount(response.totalCount);
+                setPageSize(response.pageSize);
+
+                info("Alerts data updated successfully", {
+                    projectId,
+                    currentPage: response.currentPage,
+                    loadedAlerts: response.alerts.length,
+                    totalCount: response.totalCount,
+                });
+            } catch (err) {
+                if (isDisposed) {
+                    return;
+                }
+
+                const message = err instanceof Error
+                    ? err.message
+                    : "Unknown error";
+                setAlertsError(message);
+            } finally {
+                if (!isDisposed) {
+                    setAlertsLoading(false);
+                }
             }
         };
-    }, []);
+
+        void loadAlertsData();
+
+        const pollingId = shouldPoll
+            ? setInterval(() => {
+                info("Polling dashboard data", { projectId, currentPage });
+                void loadAlertsData();
+            }, POLLING_INTERVAL)
+            : null;
+
+        return () => {
+            isDisposed = true;
+            if (pollingId) {
+                clearInterval(pollingId);
+            }
+            info("Dashboard monitoring stopped", { projectId, currentPage });
+        };
+    }, [projectId, currentPage, pageSize]);
 
     return {
         kpiData: calculatedKPIData,
@@ -242,9 +198,16 @@ export const useDashboardData = (): DashboardData => {
         kpiError: alertsError,
         alertsError,
         trafficError: null,
-        isMonitoring,
-        startMonitoring,
-        stopMonitoring,
+        isMonitoring: currentPage === 0,
+        startMonitoring: (): void => undefined,
+        stopMonitoring: (): void => undefined,
         clearData,
+        currentPage,
+        totalPages,
+        totalCount,
+        pageSize,
+        goToPage: (page: number): void => {
+            setCurrentPage(Math.max(0, page));
+        },
     };
 };

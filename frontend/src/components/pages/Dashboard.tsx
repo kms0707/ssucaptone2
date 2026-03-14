@@ -38,7 +38,12 @@ export function Dashboard({ onNavigateToDetection, projectId, projectName, onBac
         alertsError,
         trafficError,
         isMonitoring,
-    } = useDashboardData();
+        currentPage,
+        totalPages,
+        totalCount,
+        pageSize,
+        goToPage,
+    } = useDashboardData(projectId);
 
     const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
@@ -135,6 +140,11 @@ export function Dashboard({ onNavigateToDetection, projectId, projectName, onBac
                         error={alertsError}
                         onAlertClick={onNavigateToDetection}
                         isMonitoring={isMonitoring}
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        totalCount={totalCount}
+                        pageSize={pageSize}
+                        onPageChange={goToPage}
                     />
                 </div>
                 <div className="col-span-1">

@@ -21,6 +21,7 @@ const API_BASE_URL = (
     import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api/v1"
 ).replace(/\/$/, "");
 const REQUEST_TIMEOUT = 5000;
+const ALERTS_PAGE_SIZE = 100;
 
 /**
  * Converts backend protocol number to string format.
@@ -72,6 +73,7 @@ const convertLogToAlert = (log: FlowLog): Alert => {
         outBytes: normalizeNumber(log.outBytes),
         status: status,
         timestamp: timestamp,
+        ingestedAt: log.ingestedAt,
     };
 };
 
@@ -173,14 +175,17 @@ const fetchWithTimeout = async (
  * 
  * @returns {Promise<AlertsResponse>} Alerts response data
  */
-export const fetchAlerts = async (): Promise<AlertsResponse> => {
+export const fetchAlerts = async (
+    page: number = 0,
+    size: number = ALERTS_PAGE_SIZE
+): Promise<AlertsResponse> => {
     const projectId = getActiveProjectId();
     if (!projectId) {
         throw new Error("No active project selected");
     }
 
     const response = await fetchWithTimeout(
-        `${API_BASE_URL}/logs?projectId=${projectId}&page=0&size=100&onlyAnomalies=false`
+        `${API_BASE_URL}/logs?projectId=${projectId}&page=${page}&size=${size}&onlyAnomalies=false`
     );
 
     if (!response.ok) {
@@ -195,8 +200,11 @@ export const fetchAlerts = async (): Promise<AlertsResponse> => {
     info("Alerts data fetched from API");
     return {
         alerts,
-        totalCount: alerts.length,
+        totalCount: backendResponse.data.totalElements,
         lastUpdated: new Date().toISOString(),
+        currentPage: backendResponse.data.number,
+        pageSize: backendResponse.data.size,
+        totalPages: backendResponse.data.totalPages,
     };
 };
 
@@ -213,27 +221,18 @@ export const fetchAlertDetail = async (alertId: string): Promise<Alert> => {
     }
 
     const response = await fetchWithTimeout(
-        `${API_BASE_URL}/logs?projectId=${projectId}&page=0&size=100&onlyAnomalies=false`
+        `${API_BASE_URL}/logs/${alertId}?projectId=${projectId}`
     );
 
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
     }
 
-    const backendResponse: BackendResponse<LogsPageResponse> =
-        await response.json();
-
-    const foundLog = backendResponse.data.content.find(
-        (log) => log.id === alertId
-    );
-
-    if (!foundLog) {
-        throw new Error("Flow log not found");
-    }
+    const backendResponse: BackendResponse<FlowLog> = await response.json();
 
     return {
-        ...convertLogToAlert(foundLog),
-        score: foundLog.anomalyScore,
+        ...convertLogToAlert(backendResponse.data),
+        score: backendResponse.data.anomalyScore,
     };
 };
 
