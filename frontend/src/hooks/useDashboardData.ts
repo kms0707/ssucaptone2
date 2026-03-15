@@ -138,7 +138,11 @@ export const useDashboardData = (projectId: number): DashboardData => {
         const loadAlertsData = async (): Promise<void> => {
             try {
                 setAlertsError(null);
-                const response = await fetchAlerts(currentPage, pageSize);
+                const response = await fetchAlerts(
+                    currentPage,
+                    pageSize,
+                    projectId
+                );
                 if (isDisposed) {
                     return;
                 }

@@ -154,6 +154,7 @@ const fetchWithTimeout = async (
     try {
         const response = await fetch(url, {
             ...options,
+            cache: options.cache ?? "no-store",
             headers,
             signal: controller.signal,
         });
@@ -177,9 +178,10 @@ const fetchWithTimeout = async (
  */
 export const fetchAlerts = async (
     page: number = 0,
-    size: number = ALERTS_PAGE_SIZE
+    size: number = ALERTS_PAGE_SIZE,
+    projectIdOverride?: number
 ): Promise<AlertsResponse> => {
-    const projectId = getActiveProjectId();
+    const projectId = projectIdOverride?.toString() ?? getActiveProjectId();
     if (!projectId) {
         throw new Error("No active project selected");
     }
@@ -214,8 +216,11 @@ export const fetchAlerts = async (
  * @param {string} alertId - Alert ID
  * @returns {Promise<Alert>} Alert detail data
  */
-export const fetchAlertDetail = async (alertId: string): Promise<Alert> => {
-    const projectId = getActiveProjectId();
+export const fetchAlertDetail = async (
+    alertId: string,
+    projectIdOverride?: number
+): Promise<Alert> => {
+    const projectId = projectIdOverride?.toString() ?? getActiveProjectId();
     if (!projectId) {
         throw new Error("No active project selected");
     }
