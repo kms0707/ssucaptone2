@@ -14,7 +14,7 @@ import joblib
 import torch
 import torch.nn as nn
 from pytorch_tcn import TCN
-from src.preprocess_runtime import preprocess_row
+from app.preprocess_online import preprocess_row
 
 
 LOG1P_COLS = {
@@ -413,35 +413,11 @@ class SVMTCNHybrid:
         svm_raw = float(self.ocsvm.decision_function(Xs)[0])
         svm_attack_score = -svm_raw
 
-        # 판정 로직: predict 기반 vs raw threshold 기반 선택
-        if getattr(self.args, "svm_use_predict", False):
-            pred = int(self.ocsvm.predict(Xs)[0])   # -1 outlier / +1 inlier
-            svm_is_attack = (pred == -1)
-            decision_mode = "predict()"
-        else:
-            thr = getattr(self.args, "svm_raw_threshold", None)
-            if thr is None:
-                # thr를 안 주면 기존 predict로 fallback 해도 되고,
-                # 혹은 기본값을 두고 싶으면 -20 같은 값으로 지정 가능
-                pred = int(self.ocsvm.predict(Xs)[0])
-                svm_is_attack = (pred == -1)
-                decision_mode = "predict()(fallback)"
-            else:
-                pred = None
-                svm_is_attack = (svm_raw < thr)     # 핵심
-                decision_mode = f"raw<thr({thr})"
+        thr = getattr(self.args, "svm_raw_threshold", None)
+        if thr is None: 
+            thr = self.svm_threshold
 
-        if diag:
-            print("\n[SVM CHECK]")
-            print("decision_function raw:", svm_raw)
-            print("attack_score:", svm_attack_score)
-            print("decision_mode:", decision_mode)
-            if pred is not None:
-                print("predict:", pred, "(-1 outlier / +1 inlier)")
-            try:
-                print("intercept_(rho):", float(self.ocsvm.intercept_[0]))
-            except Exception:
-                pass
+        svm_is_attack = (svm_raw < thr)
 
         return svm_raw, svm_attack_score, bool(svm_is_attack)
 
