@@ -1,0 +1,12 @@
+{"documentId": "65e4f5bf-2363-4d4f-8fed-fa88dace2de3", "projectId": 4, "predictedAt": "2026-03-19T13:57:44.799265Z", "isAnomaly": false, "anomalyScore": 0.0886988416314125, "modelVersion": "svm+tcn-hybrid-v1"}
+{"documentId": "ab351404-d674-43fb-bef6-8928c8d9e266", "projectId": 4, "predictedAt": "2026-03-19T13:57:46.816846Z", "isAnomaly": true, "anomalyScore": 1.0, "modelVersion": "svm+tcn-hybrid-v1"}
+{"documentId": "2088488d-06b0-4580-9b92-2d1e940c7d2c", "projectId": 4, "predictedAt": "2026-03-19T13:57:46.825155Z", "isAnomaly": true, "anomalyScore": 1.0, "modelVersion": "svm+tcn-hybrid-v1"}
+{"documentId": "fcc435c4-e7fc-441e-92be-65657de70410", "projectId": 4, "predictedAt": "2026-03-19T13:57:48.849513Z", "isAnomaly": false, "anomalyScore": 1.5542571570048569e-12, "modelVersion": "svm+tcn-hybrid-v1"}
+{"documentId": "7494e671-4a9a-47bf-a3d3-9b74402427bc", "projectId": 4, "predictedAt": "2026-03-19T13:57:50.874654Z", "isAnomaly": true, "anomalyScore": 1.0, "modelVersion": "svm+tcn-hybrid-v1"}
+{"documentId": "7713378e-5d79-4eee-a9cd-9a508e348cf1", "projectId": 4, "predictedAt": "2026-03-19T13:57:50.884635Z", "isAnomaly": true, "anomalyScore": 1.0, "modelVersion": "svm+tcn-hybrid-v1"}
+{"documentId": "e241b523-7dbd-434e-b436-9b5258331fe8", "projectId": 4, "predictedAt": "2026-03-19T13:57:50.895159Z", "isAnomaly": true, "anomalyScore": 1.0, "modelVersion": "svm+tcn-hybrid-v1"}
+{"documentId": "98acbdc5-d413-4f60-8eeb-47717f145c9d", "projectId": 4, "predictedAt": "2026-03-19T13:57:50.905254Z", "isAnomaly": false, "anomalyScore": 0.9009166359901428, "modelVersion": "svm+tcn-hybrid-v1"}
+{"documentId": "32fa7627-f018-426a-89b0-ce31bd984bcc", "projectId": 4, "predictedAt": "2026-03-19T13:57:52.926487Z", "isAnomaly": false, "anomalyScore": 0.19298392534255981, "modelVersion": "svm+tcn-hybrid-v1"}
+{"documentId": "1e103cfb-0d81-4ce8-805b-1cdbcc7e348b", "projectId": 4, "predictedAt": "2026-03-19T13:57:56.951110Z", "isAnomaly": false, "anomalyScore": 0.08153082430362701, "modelVersion": "svm+tcn-hybrid-v1"}
+{"documentId": "1167a8c3-05a6-4bd7-a988-06e561984d6e", "projectId": 4, "predictedAt": "2026-03-19T13:58:02.978991Z", "isAnomaly": true, "anomalyScore": 1.0, "modelVersion": "svm+tcn-hybrid-v1"}
+{"documentId": "97630da3-e1c6-42ba-8628-73091040d666", "projectId": 4, "predictedAt": "2026-03-19T13:58:05.004346Z", "isAnomaly": false, "anomalyScore": 0.021127380430698395, "modelVersion": "svm+tcn-hybrid-v1"}

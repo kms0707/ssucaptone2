@@ -4,6 +4,7 @@ import com.capstone.flowids.common.InvalidApiKeyException;
 import com.capstone.flowids.db.FlowLogRepository;
 import com.capstone.flowids.db.ProjectRepository;
 import com.capstone.flowids.domain.FlowLogDocument;
+import com.capstone.flowids.dto.AiResultMessage;
 import com.capstone.flowids.dto.FlowLogMessage;
 import com.capstone.flowids.dto.FlowLogRequest;
 import com.capstone.flowids.dto.FlowLogResponse;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpStatus;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -25,6 +27,10 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class LogService {
 
+    private static final String RAW_FLOW_TOPIC = "raw-flow-logs";
+    private static final String AI_FEATURE_TOPIC = "ai-flow-features";
+    private static final String AI_RESULT_TOPIC = "ai-result";
+
     private static final String REDIS_KEY_PREFIX = "APIKey:";
     private static final long API_KEY_CACHE_TTL_HOURS = 1;
 
@@ -32,6 +38,7 @@ public class LogService {
     private final FlowLogRepository flowLogRepository;
     private final RedisTemplate<String, String> redisTemplate;
     private final ModelClient modelClient;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     public void ingest(String apiKey, List<FlowLogRequest> logs) {
         Long projectId = resolveProjectId(apiKey);
@@ -96,8 +103,28 @@ public class LogService {
                     .dstToSrcIatStddev(log.getDstToSrcIatStddev())
                     .build();
 
+            // 1) 원본 로그 적재
+            kafkaTemplate.send(RAW_FLOW_TOPIC, String.valueOf(projectId), message);
+
+            // 2) 모델 입력 feature 적재
+            kafkaTemplate.send(AI_FEATURE_TOPIC, String.valueOf(projectId), message);
+
+            // 3) 실시간 추론
             ModelPredictResponse prediction = modelClient.predict(message);
 
+            // 4) 추론 결과 적재
+            AiResultMessage resultMessage = AiResultMessage.builder()
+                    .documentId(documentId)
+                    .projectId(projectId)
+                    .predictedAt(Instant.now().toString())
+                    .isAnomaly(prediction.getIsAnomaly())
+                    .anomalyScore(prediction.getAnomalyScore())
+                    .modelVersion(prediction.getModelVersion())
+                    .build();
+
+            kafkaTemplate.send(AI_RESULT_TOPIC, String.valueOf(projectId), resultMessage);
+
+            // 5) ES 저장
             FlowLogDocument document = FlowLogDocument.builder()
                     .id(documentId)
                     .projectId(String.valueOf(projectId))
