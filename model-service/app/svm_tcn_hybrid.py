@@ -1,6 +1,7 @@
 # svm_tcn_hybrid.py
 from __future__ import annotations
 
+import os
 import time
 import math
 import argparse
@@ -41,7 +42,7 @@ class HybridResult:
     tcn_attack_prob: Optional[float] = None
 
     final_is_attack: bool = False
-    stage: str = ""   # svm_pass / svm_only / tcn_pass / tcn_alert
+    stage: str = ""   # svm_clear_pass / gray_wait_tcn / gray_tcn_pass / gray_tcn_alert / svm_only_alert / svm_strong_alert / tcn_alert
     reason: str = ""
 
 
@@ -340,6 +341,27 @@ class SVMTCNHybrid:
         self.svm_cols = _scaler_cols(self.svm_scaler, self.svm_feature_cols)
         self.svm_num_features = len(self.svm_cols)
 
+        # 정책 B용 SVM threshold
+        # 기존 학습 threshold = strong attack zone 기준
+        raw_thr = getattr(self.args, "svm_raw_threshold", None) if self.args is not None else None
+        if raw_thr is None:
+            self.svm_attack_threshold = self.svm_threshold
+        else:
+            self.svm_attack_threshold = float(raw_thr)
+
+        # gray zone 상한선: attack threshold 이상, 이 값 미만이면 TCN 재검사
+        gray_thr = getattr(self.args, "svm_gray_threshold", None) if self.args is not None else None
+        if gray_thr is None:
+            self.svm_gray_threshold = -30.0
+        else:
+            self.svm_gray_threshold = float(gray_thr)
+
+        if self.svm_gray_threshold < self.svm_attack_threshold:
+            raise ValueError(
+                f"svm_gray_threshold({self.svm_gray_threshold}) must be >= "
+                f"svm_attack_threshold({self.svm_attack_threshold})"
+            )
+
         # TCN meta load
         meta = joblib.load(tcn_meta_path)
         self.tcn_feature_cols = list(meta["feature_cols"])
@@ -413,13 +435,15 @@ class SVMTCNHybrid:
         svm_raw = float(self.ocsvm.decision_function(Xs)[0])
         svm_attack_score = -svm_raw
 
-        thr = getattr(self.args, "svm_raw_threshold", None)
-        if thr is None: 
-            thr = self.svm_threshold
+        return svm_raw, svm_attack_score
 
-        svm_is_attack = (svm_raw < thr)
-
-        return svm_raw, svm_attack_score, bool(svm_is_attack)
+    def svm_zone(self, svm_raw: float) -> str:
+        if svm_raw < self.svm_attack_threshold:
+            return "attack"
+        elif svm_raw < self.svm_gray_threshold:
+            return "gray"
+        else:
+            return "normal"
 
     # Stage2: TCN inference
     @torch.no_grad()
@@ -449,10 +473,16 @@ class SVMTCNHybrid:
         # (B) Stage1: SVM
         t1 = time.perf_counter()
         x_svm = self.svm_featurize(flow)
-        svm_raw, svm_attack_score, svm_is_attack = self.svm_stage(x_svm, diag=self.diag)
+        svm_raw, svm_attack_score = self.svm_stage(x_svm, diag=self.diag)
+        zone = self.svm_zone(svm_raw)
         t2 = time.perf_counter()
 
-        if not svm_is_attack:
+        # 정책 B:
+        # - normal zone  : 바로 정상 통과
+        # - gray zone    : TCN 재검사
+        # - attack zone  : TCN을 보되, 낮아도 alert 유지
+
+        if zone == "normal":
             res = HybridResult(
                 ts=ts, key=key,
                 svm_raw_score=svm_raw,
@@ -460,8 +490,8 @@ class SVMTCNHybrid:
                 svm_is_attack=False,
                 tcn_ready=False, tcn_attack_prob=None,
                 final_is_attack=False,
-                stage="svm_pass",
-                reason="SVM inlier(pass)",
+                stage="svm_clear_pass",
+                reason=f"SVM clear inlier(raw >= gray_thr={self.svm_gray_threshold})",
             )
             if self.diag is not None:
                 self.diag.update_result(key, res.stage, svm_raw, None, dt_svm=(t2 - t1), dt_tcn=0.0, dt_total=(time.perf_counter() - t0))
@@ -473,21 +503,50 @@ class SVMTCNHybrid:
         t4 = time.perf_counter()
 
         if not ready:
-            res = HybridResult(
-                ts=ts, key=key,
-                svm_raw_score=svm_raw,
-                svm_attack_score=svm_attack_score,
-                svm_is_attack=True,
-                tcn_ready=False, tcn_attack_prob=None,
-                final_is_attack=False,
-                stage="svm_only",
-                reason="SVM outlier but TCN session not ready",
-            )
+            if zone == "attack":
+                res = HybridResult(
+                    ts=ts, key=key,
+                    svm_raw_score=svm_raw,
+                    svm_attack_score=svm_attack_score,
+                    svm_is_attack=True,
+                    tcn_ready=False, tcn_attack_prob=None,
+                    final_is_attack=True,
+                    stage="svm_only_alert",
+                    reason="Strong SVM outlier, TCN session not ready",
+                )
+            else:
+                res = HybridResult(
+                    ts=ts, key=key,
+                    svm_raw_score=svm_raw,
+                    svm_attack_score=svm_attack_score,
+                    svm_is_attack=False,
+                    tcn_ready=False, tcn_attack_prob=None,
+                    final_is_attack=False,
+                    stage="gray_wait_tcn",
+                    reason="Gray-zone sample, TCN session not ready",
+                )
+
             if self.diag is not None:
                 self.diag.update_result(key, res.stage, svm_raw, None, dt_svm=(t2 - t1), dt_tcn=(t4 - t3), dt_total=(time.perf_counter() - t0))
             return res
 
         if (tcn_prob is not None) and (tcn_prob >= self.tcn_attack_threshold):
+            stage_name = "tcn_alert" if zone == "attack" else "gray_tcn_alert"
+            res = HybridResult(
+                ts=ts, key=key,
+                svm_raw_score=svm_raw,
+                svm_attack_score=svm_attack_score,
+                svm_is_attack=(zone == "attack"),
+                tcn_ready=True, tcn_attack_prob=tcn_prob,
+                final_is_attack=True,
+                stage=stage_name,
+                reason=f"TCN attack_prob >= {self.tcn_attack_threshold}",
+            )
+            if self.diag is not None:
+                self.diag.update_result(key, res.stage, svm_raw, tcn_prob, dt_svm=(t2 - t1), dt_tcn=(t4 - t3), dt_total=(time.perf_counter() - t0))
+            return res
+
+        if zone == "attack":
             res = HybridResult(
                 ts=ts, key=key,
                 svm_raw_score=svm_raw,
@@ -495,8 +554,8 @@ class SVMTCNHybrid:
                 svm_is_attack=True,
                 tcn_ready=True, tcn_attack_prob=tcn_prob,
                 final_is_attack=True,
-                stage="tcn_alert",
-                reason=f"TCN attack_prob >= {self.tcn_attack_threshold}",
+                stage="svm_strong_alert",
+                reason="Strong SVM outlier retained by policy B",
             )
             if self.diag is not None:
                 self.diag.update_result(key, res.stage, svm_raw, tcn_prob, dt_svm=(t2 - t1), dt_tcn=(t4 - t3), dt_total=(time.perf_counter() - t0))
@@ -506,11 +565,11 @@ class SVMTCNHybrid:
             ts=ts, key=key,
             svm_raw_score=svm_raw,
             svm_attack_score=svm_attack_score,
-            svm_is_attack=True,
+            svm_is_attack=False,
             tcn_ready=True, tcn_attack_prob=tcn_prob,
             final_is_attack=False,
-            stage="tcn_pass",
-            reason="TCN judged benign/low confidence",
+            stage="gray_tcn_pass",
+            reason="Gray-zone sample rejected by TCN",
         )
         if self.diag is not None:
             self.diag.update_result(key, res.stage, svm_raw, tcn_prob, dt_svm=(t2 - t1), dt_tcn=(t4 - t3), dt_total=(time.perf_counter() - t0))
@@ -540,9 +599,9 @@ def _cli():
     ap.add_argument("--key_mode", default="5tuple", choices=["5tuple", "src_ip"])
 
     ap.add_argument("--svm_raw_threshold", type=float, default=None,
-                help="Override raw threshold: attack if raw < thr")
-    ap.add_argument("--svm_use_predict", action="store_true",
-                help="Use ocsvm.predict() instead of raw threshold")
+                help="Override strong attack raw threshold: attack if raw < thr")
+    ap.add_argument("--svm_gray_threshold", type=float, default=None,
+                help="Gray-zone upper threshold: gray if attack_thr <= raw < gray_thr")
 
     args = ap.parse_args()
 
@@ -572,6 +631,8 @@ def _cli():
     print("rows:", len(df))
     print("total time:", dt, "sec")
     print("stage:", dict(stage_cnt))
+    print("svm_attack_threshold:", engine.svm_attack_threshold)
+    print("svm_gray_threshold:", engine.svm_gray_threshold)
 
     rep = engine.diag_report()
     if rep:

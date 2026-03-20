@@ -20,4 +20,8 @@ def predict(req: FlowPredictRequest):
         isAnomaly=result["isAnomaly"],
         anomalyScore=result["anomalyScore"],
         modelVersion="svm+tcn-hybrid-v1",
+        stage=result.get("stage"),
+        svmRaw=result.get("svm_raw"),
+        tcnProb=result.get("tcn_prob"),
+        reason=result.get("reason"),
     )

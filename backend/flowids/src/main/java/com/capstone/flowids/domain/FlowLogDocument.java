@@ -182,4 +182,16 @@ public class FlowLogDocument {
 
     @Field(type = FieldType.Keyword)
     private String agentVersion;
+
+    @Field(type = FieldType.Keyword)
+    private String stage;
+
+    @Field(type = FieldType.Double)
+    private Double svmRaw;
+
+    @Field(type = FieldType.Double)
+    private Double tcnProb;
+
+    @Field(type = FieldType.Text)
+    private String reason;
 }

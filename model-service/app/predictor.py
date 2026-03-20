@@ -1,4 +1,6 @@
 from pathlib import Path
+from types import SimpleNamespace
+
 from app.svm_tcn_hybrid import SVMTCNHybrid
 
 
@@ -7,6 +9,11 @@ class Predictor:
         base_dir = Path(__file__).resolve().parent.parent
         artifacts_dir = base_dir / "artifacts"
 
+        args = SimpleNamespace(
+            svm_raw_threshold=-45.0,   # None이면 bundle에 저장된 threshold 사용
+            svm_gray_threshold=-30.0,  # gray zone upper threshold
+        )
+
         self.model = SVMTCNHybrid(
             ocsvm_bundle_path=str(artifacts_dir / "ocsvm_bundle.joblib"),
             tcn_state_dict_path=str(artifacts_dir / "tcn_state_dict.pt"),
@@ -14,6 +21,7 @@ class Predictor:
             key_mode="5tuple",
             device="cpu",
             enable_diag=False,
+            args=args,
         )
 
     def predict(self, flow: dict) -> dict:
@@ -41,4 +49,9 @@ class Predictor:
         return {
             "isAnomaly": is_anomaly,
             "anomalyScore": float(score),
+            "stage": _get(result, "stage"),
+            "svm_raw": _get(result, "svm_raw_score"),
+            "tcn_prob": _get(result, "tcn_attack_prob"),
         }
+    
+    

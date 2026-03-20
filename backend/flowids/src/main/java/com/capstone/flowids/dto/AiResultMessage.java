@@ -15,4 +15,8 @@ public class AiResultMessage {
     private Boolean isAnomaly;
     private Double anomalyScore;
     private String modelVersion;
+    private String stage;
+    private Double svmRaw;
+    private Double tcnProb;
+    private String reason;
 }

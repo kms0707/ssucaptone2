@@ -120,6 +120,10 @@ public class LogService {
                     .isAnomaly(prediction.getIsAnomaly())
                     .anomalyScore(prediction.getAnomalyScore())
                     .modelVersion(prediction.getModelVersion())
+                    .stage(prediction.getStage())
+                    .svmRaw(prediction.getSvmRaw())
+                    .tcnProb(prediction.getTcnProb())
+                    .reason(prediction.getReason())
                     .build();
 
             kafkaTemplate.send(AI_RESULT_TOPIC, String.valueOf(projectId), resultMessage);
@@ -182,6 +186,10 @@ public class LogService {
                     .isAnomaly(prediction.getIsAnomaly())
                     .anomalyScore(prediction.getAnomalyScore())
                     .modelVersion(prediction.getModelVersion())
+                    .stage(prediction.getStage())
+                    .svmRaw(prediction.getSvmRaw())
+                    .tcnProb(prediction.getTcnProb())
+                    .reason(prediction.getReason())
                     .build();
 
             flowLogRepository.save(document);

@@ -68,3 +68,7 @@ class FlowPredictResponse(BaseModel):
     isAnomaly: bool
     anomalyScore: float
     modelVersion: str
+    stage: Optional[str] = None
+    svmRaw: Optional[float] = None
+    tcnProb: Optional[float] = None
+    reason: Optional[str] = None
