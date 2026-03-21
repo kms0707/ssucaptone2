@@ -10,7 +10,7 @@ class Predictor:
         artifacts_dir = base_dir / "artifacts"
 
         args = SimpleNamespace(
-            svm_raw_threshold=-45.0,   # None이면 bundle에 저장된 threshold 사용
+            svm_raw_threshold=-45.0,   # 현재 실험 중인 strong attack threshold
             svm_gray_threshold=-30.0,  # gray zone upper threshold
         )
 
@@ -18,7 +18,7 @@ class Predictor:
             ocsvm_bundle_path=str(artifacts_dir / "ocsvm_bundle.joblib"),
             tcn_state_dict_path=str(artifacts_dir / "tcn_state_dict.pt"),
             tcn_meta_path=str(artifacts_dir / "tcn_meta.joblib"),
-            key_mode="5tuple",
+            key_mode="src_ip_dst_ip",
             device="cpu",
             enable_diag=False,
             args=args,
@@ -52,6 +52,5 @@ class Predictor:
             "stage": _get(result, "stage"),
             "svm_raw": _get(result, "svm_raw_score"),
             "tcn_prob": _get(result, "tcn_attack_prob"),
+            "reason": _get(result, "reason"),
         }
-    
-    

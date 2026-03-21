@@ -1,7 +1,6 @@
 # svm_tcn_hybrid.py
 from __future__ import annotations
 
-import os
 import time
 import math
 import argparse
@@ -42,7 +41,7 @@ class HybridResult:
     tcn_attack_prob: Optional[float] = None
 
     final_is_attack: bool = False
-    stage: str = ""   # svm_clear_pass / gray_wait_tcn / gray_tcn_pass / gray_tcn_alert / svm_only_alert / svm_strong_alert / tcn_alert
+    stage: str = ""   # svm_clear_pass / gray_wait_tcn / gray_tcn_pass / gray_tcn_alert / svm_only_alert / svm_attack_tcn_reject / svm_strong_alert / tcn_alert
     reason: str = ""
 
 
@@ -134,16 +133,25 @@ class SessionTCN(nn.Module):
         h = self.tcn(x)
         out = self.head(h)
         return out.squeeze(1)
-
-
+    
 # Session buffer (per key)
 class SessionBuffer:
-    def __init__(self, max_len: int):
+    def __init__(self, max_len: int, idle_timeout_sec: float = 10.0):
         self.max_len = int(max_len)
+        self.idle_timeout_sec = float(idle_timeout_sec)
         self.buf: DefaultDict[str, Deque[np.ndarray]] = defaultdict(lambda: deque(maxlen=self.max_len))
+        self.last_seen: Dict[str, float] = {}
 
-    def push(self, key: str, feat_vec: np.ndarray) -> None:
+    def push(self, key: str, feat_vec: np.ndarray, now_ts: Optional[float] = None) -> None:
+        if now_ts is None:
+            now_ts = time.time()
+
+        prev_ts = self.last_seen.get(key)
+        if prev_ts is not None and (now_ts - prev_ts) > self.idle_timeout_sec:
+            self.buf[key].clear()
+
         self.buf[key].append(np.asarray(feat_vec, dtype=np.float32))
+        self.last_seen[key] = now_ts
 
     def get_padded_ncl(self, key: str, F: int) -> Tuple[np.ndarray, int]:
         seq = list(self.buf[key])
@@ -160,6 +168,10 @@ class SessionBuffer:
         padded = np.zeros((1, F, self.max_len), dtype=np.float32)
         padded[0, :, :L] = X.T  # (1, F, L)
         return padded, L
+
+    def reset(self, key: str) -> None:
+        self.buf[key].clear()
+        self.last_seen.pop(key, None)
 
 
 # Diagnostics helper (optional)
@@ -379,7 +391,7 @@ class SVMTCNHybrid:
         self.tcn.eval()
 
         # session buffer
-        self.session_buf = SessionBuffer(max_len=self.tcn_max_len)
+        self.session_buf = SessionBuffer(max_len=self.tcn_max_len, idle_timeout_sec=10.0)
 
         # diagnostics
         self.diag: Optional[OnlineDiag] = None
@@ -391,6 +403,12 @@ class SVMTCNHybrid:
     def make_key(self, flow: Dict[str, Any]) -> str:
         if self.key_mode == "src_ip":
             return str(flow.get("IPV4_SRC_ADDR", "unknown"))
+        
+        if self.key_mode == "src_ip_dst_ip":
+            return (
+                f'{flow.get("IPV4_SRC_ADDR","?")}-'
+                f'{flow.get("IPV4_DST_ADDR","?")}'
+            )
 
         return (
             f'{flow.get("IPV4_SRC_ADDR","?")}-'
@@ -468,7 +486,7 @@ class SVMTCNHybrid:
 
         # (A) TCN buffer update (항상)
         x_tcn = self.tcn_featurize(flow)
-        self.session_buf.push(key, x_tcn)
+        self.session_buf.push(key, x_tcn, now_ts=ts)
 
         # (B) Stage1: SVM
         t1 = time.perf_counter()
@@ -481,6 +499,7 @@ class SVMTCNHybrid:
         # - normal zone  : 바로 정상 통과
         # - gray zone    : TCN 재검사
         # - attack zone  : TCN을 보되, 낮아도 alert 유지
+        #   단, TCN이 아주 강하게 정상이라고 보면 reject 허용
 
         if zone == "normal":
             res = HybridResult(
@@ -494,7 +513,10 @@ class SVMTCNHybrid:
                 reason=f"SVM clear inlier(raw >= gray_thr={self.svm_gray_threshold})",
             )
             if self.diag is not None:
-                self.diag.update_result(key, res.stage, svm_raw, None, dt_svm=(t2 - t1), dt_tcn=0.0, dt_total=(time.perf_counter() - t0))
+                self.diag.update_result(
+                    key, res.stage, svm_raw, None,
+                    dt_svm=(t2 - t1), dt_tcn=0.0, dt_total=(time.perf_counter() - t0)
+                )
             return res
 
         # (C) Stage2: TCN
@@ -527,7 +549,10 @@ class SVMTCNHybrid:
                 )
 
             if self.diag is not None:
-                self.diag.update_result(key, res.stage, svm_raw, None, dt_svm=(t2 - t1), dt_tcn=(t4 - t3), dt_total=(time.perf_counter() - t0))
+                self.diag.update_result(
+                    key, res.stage, svm_raw, None,
+                    dt_svm=(t2 - t1), dt_tcn=(t4 - t3), dt_total=(time.perf_counter() - t0)
+                )
             return res
 
         if (tcn_prob is not None) and (tcn_prob >= self.tcn_attack_threshold):
@@ -543,22 +568,41 @@ class SVMTCNHybrid:
                 reason=f"TCN attack_prob >= {self.tcn_attack_threshold}",
             )
             if self.diag is not None:
-                self.diag.update_result(key, res.stage, svm_raw, tcn_prob, dt_svm=(t2 - t1), dt_tcn=(t4 - t3), dt_total=(time.perf_counter() - t0))
+                self.diag.update_result(
+                    key, res.stage, svm_raw, tcn_prob,
+                    dt_svm=(t2 - t1), dt_tcn=(t4 - t3), dt_total=(time.perf_counter() - t0)
+                )
             return res
 
         if zone == "attack":
-            res = HybridResult(
-                ts=ts, key=key,
-                svm_raw_score=svm_raw,
-                svm_attack_score=svm_attack_score,
-                svm_is_attack=True,
-                tcn_ready=True, tcn_attack_prob=tcn_prob,
-                final_is_attack=True,
-                stage="svm_strong_alert",
-                reason="Strong SVM outlier retained by policy B",
-            )
+            if (tcn_prob is not None) and (tcn_prob < 0.05):
+                res = HybridResult(
+                    ts=ts, key=key,
+                    svm_raw_score=svm_raw,
+                    svm_attack_score=svm_attack_score,
+                    svm_is_attack=True,
+                    tcn_ready=True, tcn_attack_prob=tcn_prob,
+                    final_is_attack=False,
+                    stage="svm_attack_tcn_reject",
+                    reason="Strong SVM outlier but TCN strongly rejected attack",
+                )
+            else:
+                res = HybridResult(
+                    ts=ts, key=key,
+                    svm_raw_score=svm_raw,
+                    svm_attack_score=svm_attack_score,
+                    svm_is_attack=True,
+                    tcn_ready=True, tcn_attack_prob=tcn_prob,
+                    final_is_attack=True,
+                    stage="svm_strong_alert",
+                    reason="Strong SVM outlier retained by policy B",
+                )
+
             if self.diag is not None:
-                self.diag.update_result(key, res.stage, svm_raw, tcn_prob, dt_svm=(t2 - t1), dt_tcn=(t4 - t3), dt_total=(time.perf_counter() - t0))
+                self.diag.update_result(
+                    key, res.stage, svm_raw, tcn_prob,
+                    dt_svm=(t2 - t1), dt_tcn=(t4 - t3), dt_total=(time.perf_counter() - t0)
+                )
             return res
 
         res = HybridResult(
@@ -572,9 +616,12 @@ class SVMTCNHybrid:
             reason="Gray-zone sample rejected by TCN",
         )
         if self.diag is not None:
-            self.diag.update_result(key, res.stage, svm_raw, tcn_prob, dt_svm=(t2 - t1), dt_tcn=(t4 - t3), dt_total=(time.perf_counter() - t0))
+            self.diag.update_result(
+                key, res.stage, svm_raw, tcn_prob,
+                dt_svm=(t2 - t1), dt_tcn=(t4 - t3), dt_total=(time.perf_counter() - t0)
+            )
         return res
-
+    
     def diag_report(self) -> Optional[str]:
         if self.diag is None:
             return None
@@ -596,7 +643,7 @@ def _cli():
     ap.add_argument("--report_every", type=int, default=10000)
     ap.add_argument("--clip", type=float, default=1e12)
     ap.add_argument("--diag", action="store_true", help="enable online diagnostics")
-    ap.add_argument("--key_mode", default="5tuple", choices=["5tuple", "src_ip"])
+    ap.add_argument("--key_mode", default="5tuple", choices=["5tuple", "src_ip", "src_ip_dst_ip"])
 
     ap.add_argument("--svm_raw_threshold", type=float, default=None,
                 help="Override strong attack raw threshold: attack if raw < thr")
