@@ -22,6 +22,7 @@ const API_BASE_URL = (
 ).replace(/\/$/, "");
 const REQUEST_TIMEOUT = 5000;
 const ALERTS_PAGE_SIZE = 100;
+const SUMMARY_PAGE_SIZE = 1;
 
 /**
  * Converts backend protocol number to string format.
@@ -171,6 +172,32 @@ const fetchWithTimeout = async (
     }
 };
 
+const fetchLogsPage = async (
+    page: number,
+    size: number,
+    onlyAnomalies: boolean,
+    projectIdOverride?: number
+): Promise<LogsPageResponse> => {
+    const projectId = projectIdOverride?.toString() ?? getActiveProjectId();
+    if (!projectId) {
+        throw new Error("No active project selected");
+    }
+
+    const response = await fetchWithTimeout(
+        `${API_BASE_URL}/logs?projectId=${projectId}&page=${page}` +
+        `&size=${size}&onlyAnomalies=${onlyAnomalies}`
+    );
+
+    if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+    }
+
+    const backendResponse: BackendResponse<LogsPageResponse> =
+        await response.json();
+
+    return backendResponse.data;
+};
+
 /**
  * Fetches real-time alerts from the backend API.
  * 
@@ -181,32 +208,22 @@ export const fetchAlerts = async (
     size: number = ALERTS_PAGE_SIZE,
     projectIdOverride?: number
 ): Promise<AlertsResponse> => {
-    const projectId = projectIdOverride?.toString() ?? getActiveProjectId();
-    if (!projectId) {
-        throw new Error("No active project selected");
-    }
-
-    const response = await fetchWithTimeout(
-        `${API_BASE_URL}/logs?projectId=${projectId}&page=${page}&size=${size}&onlyAnomalies=false`
+    const pageData = await fetchLogsPage(
+        page,
+        size,
+        false,
+        projectIdOverride
     );
-
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-
-    const backendResponse: BackendResponse<LogsPageResponse> =
-        await response.json();
-
-    const alerts = backendResponse.data.content.map(convertLogToAlert);
+    const alerts = pageData.content.map(convertLogToAlert);
 
     info("Alerts data fetched from API");
     return {
         alerts,
-        totalCount: backendResponse.data.totalElements,
+        totalCount: pageData.totalElements,
         lastUpdated: new Date().toISOString(),
-        currentPage: backendResponse.data.number,
-        pageSize: backendResponse.data.size,
-        totalPages: backendResponse.data.totalPages,
+        currentPage: pageData.number,
+        pageSize: pageData.size,
+        totalPages: pageData.totalPages,
     };
 };
 
@@ -255,29 +272,33 @@ export const fetchKPIs = async (): Promise<never> => {
  * 
  * @returns {Promise<TrafficDistributionResponse>} Traffic data
  */
-export const fetchTrafficDistribution = async ():
+export const fetchTrafficDistribution = async (
+    projectIdOverride?: number
+):
     Promise<TrafficDistributionResponse> => {
-    const alertsResponse = await fetchAlerts();
+    const [allLogsPage, anomalyLogsPage] = await Promise.all([
+        fetchLogsPage(0, SUMMARY_PAGE_SIZE, false, projectIdOverride),
+        fetchLogsPage(0, SUMMARY_PAGE_SIZE, true, projectIdOverride),
+    ]);
+    const totalFlows = allLogsPage.totalElements;
+    const attackCount = anomalyLogsPage.totalElements;
+    const normalCount = Math.max(totalFlows - attackCount, 0);
     const categories = [
         {
             name: "Normal",
-            value: alertsResponse.alerts.filter((alert) =>
-                alert.status === "Normal"
-            ).length,
+            value: normalCount,
             color: "#14b8a6",
         },
         {
             name: "Attack",
-            value: alertsResponse.alerts.filter((alert) =>
-                alert.status === "Attack"
-            ).length,
+            value: attackCount,
             color: "#ef4444",
         },
     ];
 
     return {
         categories,
-        totalFlows: alertsResponse.totalCount,
+        totalFlows,
         lastUpdated: new Date().toISOString(),
     };
 };

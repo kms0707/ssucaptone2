@@ -6,6 +6,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { 
     fetchAlerts, 
+    fetchTrafficDistribution,
 } from "../utils/apiClient";
 import { KPIData, Alert, TrafficCategory } from "../types/api";
 import { info } from "../utils/logger";
@@ -32,30 +33,6 @@ interface DashboardData {
     pageSize: number;
     goToPage: (page: number) => void;
 }
-
-/**
- * Calculates traffic distribution from alerts data.
- * 
- * @param {Alert[]} alerts - Array of alerts
- * @returns {TrafficCategory[]} Traffic distribution by status
- */
-const calculateTrafficDistribution = (
-    alerts: Alert[]
-): TrafficCategory[] => {
-    const counts = {
-        Normal: 0,
-        Attack: 0,
-    };
-
-    alerts.forEach((alert) => {
-        counts[alert.status]++;
-    });
-
-    return [
-        { name: "Normal", value: counts.Normal, color: "#14b8a6" },
-        { name: "Attack", value: counts.Attack, color: "#ef4444" },
-    ];
-};
 
 /**
  * Calculates KPI data from alerts.
@@ -87,20 +64,15 @@ const calculateKPIData = (alerts: Alert[]): KPIData => {
 
 export const useDashboardData = (projectId: number): DashboardData => {
     const [alerts, setAlerts] = useState<Alert[]>([]);
+    const [trafficData, setTrafficData] = useState<TrafficCategory[]>([]);
     const [alertsLoading, setAlertsLoading] = useState(true);
+    const [trafficLoading, setTrafficLoading] = useState(true);
     const [alertsError, setAlertsError] = useState<string | null>(null);
+    const [trafficError, setTrafficError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [totalCount, setTotalCount] = useState(0);
     const [pageSize, setPageSize] = useState(100);
-
-    // Calculate traffic distribution from alerts data
-    const calculatedTrafficData = useMemo(() => {
-        if (alerts.length > 0) {
-            return calculateTrafficDistribution(alerts);
-        }
-        return [];
-    }, [alerts]);
 
     // Calculate KPI data from alerts
     const calculatedKPIData = useMemo(() => {
@@ -118,8 +90,11 @@ export const useDashboardData = (projectId: number): DashboardData => {
     const clearData = (): void => {
         info("Clearing all data");
         setAlerts([]);
+        setTrafficData([]);
         setAlertsLoading(false);
+        setTrafficLoading(false);
         setAlertsError(null);
+        setTrafficError(null);
         setTotalPages(0);
         setTotalCount(0);
     };
@@ -133,6 +108,7 @@ export const useDashboardData = (projectId: number): DashboardData => {
         const shouldPoll = currentPage === 0;
 
         setAlertsLoading(true);
+        setTrafficLoading(true);
         info("Monitoring started", { projectId, currentPage });
 
         const loadAlertsData = async (): Promise<void> => {
@@ -174,12 +150,48 @@ export const useDashboardData = (projectId: number): DashboardData => {
             }
         };
 
-        void loadAlertsData();
+        const loadTrafficData = async (): Promise<void> => {
+            try {
+                setTrafficError(null);
+                const response = await fetchTrafficDistribution(projectId);
+                if (isDisposed) {
+                    return;
+                }
+
+                setTrafficData(response.categories);
+                info("Traffic distribution updated successfully", {
+                    projectId,
+                    totalFlows: response.totalFlows,
+                });
+            } catch (err) {
+                if (isDisposed) {
+                    return;
+                }
+
+                const message = err instanceof Error
+                    ? err.message
+                    : "Unknown error";
+                setTrafficError(message);
+            } finally {
+                if (!isDisposed) {
+                    setTrafficLoading(false);
+                }
+            }
+        };
+
+        const loadDashboardData = async (): Promise<void> => {
+            await Promise.all([
+                loadAlertsData(),
+                loadTrafficData(),
+            ]);
+        };
+
+        void loadDashboardData();
 
         const pollingId = shouldPoll
             ? setInterval(() => {
                 info("Polling dashboard data", { projectId, currentPage });
-                void loadAlertsData();
+                void loadDashboardData();
             }, POLLING_INTERVAL)
             : null;
 
@@ -195,13 +207,13 @@ export const useDashboardData = (projectId: number): DashboardData => {
     return {
         kpiData: calculatedKPIData,
         alerts,
-        trafficData: calculatedTrafficData,
+        trafficData,
         kpiLoading: alertsLoading,
         alertsLoading,
-        trafficLoading: alertsLoading,
+        trafficLoading,
         kpiError: alertsError,
         alertsError,
-        trafficError: null,
+        trafficError,
         isMonitoring: currentPage === 0,
         startMonitoring: (): void => undefined,
         stopMonitoring: (): void => undefined,
