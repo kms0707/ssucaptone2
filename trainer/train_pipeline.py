@@ -7,12 +7,13 @@ DATASET_PATH = BASE_DIR / "data" / "processed" / "merged_dataset.json"
 
 
 def is_valid_feature_row(row: dict) -> bool:
-    required_fields = [
-        "inBytes", "inPkts", "outBytes", "outPkts", "flowDuration"
-    ]
-    for field in required_fields:
-        if row.get(field) is None:
-            return False
+    # 최소한 이 정도만 있으면 유효하다고 보자
+    if row.get("inBytes") is None:
+        return False
+    if row.get("inPkts") is None:
+        return False
+    if row.get("flowDuration") is None:
+        return False
     return True
 
 
@@ -31,16 +32,12 @@ def main():
 
     normal_rows = [row for row in valid_rows if row.get("isAnomaly") is False]
     anomaly_rows = [row for row in valid_rows if row.get("isAnomaly") is True]
-    unlabeled_rows = [
-        row for row in valid_rows
-        if row.get("isAnomaly") is None
-    ]
+    unlabeled_rows = [row for row in valid_rows if row.get("isAnomaly") is None]
 
     print(f"[train_pipeline] normal_count={len(normal_rows)}")
     print(f"[train_pipeline] anomaly_count={len(anomaly_rows)}")
     print(f"[train_pipeline] unlabeled_count={len(unlabeled_rows)}")
 
-    # OCSVM 재학습용 정상 데이터만 따로 저장
     normal_output = BASE_DIR / "data" / "processed" / "normal_dataset.json"
     with normal_output.open("w", encoding="utf-8") as f:
         json.dump(normal_rows, f, ensure_ascii=False, indent=2)
@@ -51,7 +48,6 @@ def main():
 
     print(f"[train_pipeline] saved normal dataset to {normal_output}")
     print(f"[train_pipeline] saved anomaly dataset to {anomaly_output}")
-
     print("[train_pipeline] TODO: connect real OCSVM / TCN retraining here")
 
 
