@@ -11,7 +11,7 @@ class Predictor:
 
         args = SimpleNamespace(
             svm_raw_threshold=-45.0,   # 현재 실험 중인 strong attack threshold
-            svm_gray_threshold=-30.0,  # gray zone upper threshold
+            svm_gray_threshold=-38.0,  # gray zone upper threshold
         )
 
         self.model = SVMTCNHybrid(
