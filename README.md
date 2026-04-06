@@ -465,7 +465,12 @@ Collector(Agent)에서 수집한 Flow 로그를 Backend API로 전송하여 탐�
 
 ## 🔗 Repository
 
-- **GitHub**: https://github.com/kms0707/ssucaptone2
+- **GitHub**: https://github.com/JunYeopAn/ssucaptone1
+
+---
+
+## 🔗 Site
+- **Site** : https://ssucaptone2.vercel.app/
 
 ---
 
