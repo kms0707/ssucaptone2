@@ -469,11 +469,6 @@ Collector(Agent)에서 수집한 Flow 로그를 Backend API로 전송하여 탐�
 
 ---
 
-## 🔗 Site
-- **Site** : https://ssucaptone2.vercel.app/
-
----
-
 ## 🙌 Notes
 
 이 프로젝트는 Flow 로그 기반의 경량 침입 탐지와  
