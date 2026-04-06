@@ -1,5 +1,5 @@
 # SVM-TCN Hybrid Flow-based Intrusion Detection System (netsentry)
-### SVM-TCN 하이브리드 구조의 Flow 로그 기반 침입 탐지 시스템
+### SVM-TCN 하이브리드 구조의 Flow 로그 기반 침입 탐지 시스템 (netsentry)
 
 <p align="center">
   <img src="https://img.shields.io/badge/Backend-Spring%20Boot-6DB33F?style=for-the-badge" />
